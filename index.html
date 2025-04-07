@@ -387,7 +387,7 @@
                         syncMobileToTable();
                         saveTableData();
                     }, 300);
-                }, { passive: true });
+                }, { passive: false });
                 
                 // Prevent unwanted event bubbling
                 newInput.addEventListener('click', function(e) {
