@@ -356,7 +356,7 @@
                         syncMobileToTable();
                         saveTableData();
                     }
-                });
+                }, { passive: false });
             });
             
             document.querySelectorAll('.mobile-qty-increase').forEach(btn => {
@@ -369,47 +369,71 @@
                     qtyInput.value = qty + 1;
                     syncMobileToTable();
                     saveTableData();
-                });
+                }, { passive: false });
             });
             
-            // Fix for mobile inputs
+            // Handle input fields on mobile
             document.querySelectorAll('.mobile-mark-name, .mobile-item-name').forEach(input => {
-                // Use input event instead of change for real-time updates
-                input.addEventListener('input', function() {
-                    // Add small delay to ensure focus is not lost
-                    setTimeout(() => {
+                // Remove all previous event listeners
+                const newInput = input.cloneNode(true);
+                input.parentNode.replaceChild(newInput, input);
+                
+                // Add input event for saving data
+                newInput.addEventListener('input', function(e) {
+                    e.stopPropagation();
+                    // Delay sync to avoid interrupting the typing
+                    clearTimeout(newInput.saveTimeout);
+                    newInput.saveTimeout = setTimeout(() => {
                         syncMobileToTable();
                         saveTableData();
-                    }, 100);
-                });
+                    }, 300);
+                }, { passive: true });
                 
-                // Prevent focus loss on click
-                input.addEventListener('click', function(e) {
+                // Prevent unwanted event bubbling
+                newInput.addEventListener('click', function(e) {
                     e.stopPropagation();
-                });
+                }, { passive: true });
                 
-                // Prevent touchstart events from propagating
-                input.addEventListener('touchstart', function(e) {
+                newInput.addEventListener('touchstart', function(e) {
+                    // Don't stop propagation here to allow focus
+                }, { passive: true });
+                
+                // When focused in, ensure keyboard stays visible
+                newInput.addEventListener('focus', function(e) {
                     e.stopPropagation();
+                    // Scroll to keep the input in view
+                    setTimeout(() => {
+                        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
                 }, { passive: true });
             });
             
             // Handle select changes
             document.querySelectorAll('.mobile-size-select').forEach(select => {
-                select.addEventListener('change', function(e) {
+                // Remove all previous event listeners
+                const newSelect = select.cloneNode(true);
+                select.parentNode.replaceChild(newSelect, select);
+                
+                newSelect.addEventListener('change', function(e) {
                     e.stopPropagation();
                     syncMobileToTable();
                     saveTableData();
-                });
+                }, { passive: true });
                 
-                // Prevent focus loss on click
-                select.addEventListener('click', function(e) {
+                newSelect.addEventListener('click', function(e) {
                     e.stopPropagation();
-                });
+                }, { passive: true });
                 
-                // Prevent touchstart events from propagating
-                select.addEventListener('touchstart', function(e) {
+                newSelect.addEventListener('touchstart', function(e) {
+                    // Allow normal behavior for select elements
+                }, { passive: true });
+                
+                // When focused in, ensure dropdown stays visible
+                newSelect.addEventListener('focus', function(e) {
                     e.stopPropagation();
+                    setTimeout(() => {
+                        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
                 }, { passive: true });
             });
         }
@@ -445,7 +469,34 @@
             // Initial view update
             updateViewMode();
             
-            // Update view on resize with debounce to prevent excessive updates
+            // Fix for iOS focus issues - disable body scroll when focusing
+            const formInputs = document.querySelectorAll('input[type="text"], select');
+            formInputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    document.body.style.position = 'fixed';
+                    document.body.style.width = '100%';
+                    
+                    // Store current scroll position
+                    document.body.dataset.scrollY = window.scrollY;
+                    
+                    // Add some delay to ensure input is in viewport
+                    setTimeout(() => {
+                        this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                });
+                
+                input.addEventListener('blur', function() {
+                    document.body.style.position = '';
+                    document.body.style.width = '';
+                    
+                    // Restore scroll position
+                    if (document.body.dataset.scrollY) {
+                        window.scrollTo(0, parseInt(document.body.dataset.scrollY));
+                    }
+                });
+            });
+            
+            // Update view on resize with debounce
             let resizeTimer;
             window.addEventListener('resize', function() {
                 clearTimeout(resizeTimer);
@@ -493,30 +544,23 @@
                 }
             });
             
-            // Fix for table inputs
-            document.getElementById("tableBody").addEventListener("input", function(e) {
-                if (e.target.classList.contains("form-control")) {
-                    // Add small delay to ensure focus is not lost
-                    setTimeout(() => {
+            // Fix for table inputs - use direct event binding
+            document.querySelectorAll('#tableBody .form-control').forEach(input => {
+                input.addEventListener('input', function() {
+                    clearTimeout(this.saveTimeout);
+                    this.saveTimeout = setTimeout(() => {
                         syncTableToMobile();
-                        saveTableData();
-                    }, 100000000);
-                }
+                        saveTableData();  
+                    }, 300);
+                });
             });
             
             // Handle changes to selects
-            document.getElementById("tableBody").addEventListener("change", function(e) {
-                if (e.target.classList.contains("size-select")) {
+            document.querySelectorAll('#tableBody .size-select').forEach(select => {
+                select.addEventListener('change', function() {
                     syncTableToMobile();
                     saveTableData();
-                }
-            });
-            
-            // Prevent touchstart events from propagating on form elements
-            document.querySelectorAll('input, select').forEach(el => {
-                el.addEventListener('touchstart', function(e) {
-                    e.stopPropagation();
-                }, { passive: true });
+                });
             });
         });
         
@@ -546,7 +590,28 @@
                     </div>
                 </td>
             `;
+            
             document.getElementById("tableBody").appendChild(newRow);
+            
+            // Add event listeners to new row inputs
+            const inputs = newRow.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    clearTimeout(this.saveTimeout);
+                    this.saveTimeout = setTimeout(() => {
+                        syncTableToMobile();
+                        saveTableData();
+                    }, 300);
+                });
+            });
+            
+            const selects = newRow.querySelectorAll('.size-select');
+            selects.forEach(select => {
+                select.addEventListener('change', function() {
+                    syncTableToMobile();
+                    saveTableData();
+                });
+            });
         }
         
         // Function to save table data to localStorage
@@ -609,6 +674,26 @@
                         </td>
                     `;
                     tableBody.appendChild(newRow);
+                    
+                    // Add event listeners to loaded row inputs
+                    const inputs = newRow.querySelectorAll('.form-control');
+                    inputs.forEach(input => {
+                        input.addEventListener('input', function() {
+                            clearTimeout(this.saveTimeout);
+                            this.saveTimeout = setTimeout(() => {
+                                syncTableToMobile();
+                                saveTableData();
+                            }, 300);
+                        });
+                    });
+                    
+                    const selects = newRow.querySelectorAll('.size-select');
+                    selects.forEach(select => {
+                        select.addEventListener('change', function() {
+                            syncTableToMobile();
+                            saveTableData();
+                        });
+                    });
                 });
             } else {
                 // Add one empty row by default
@@ -696,6 +781,20 @@
                 alert("There was an error exporting to Excel. Please make sure the SheetJS library is properly loaded.");
             }
         }
+        
+        // Add additional iOS focus handling
+        document.addEventListener('touchend', function(e) {
+            const targetElement = e.target;
+            // Only run for inputs and selects and only if not already focused
+            if ((targetElement.tagName === 'INPUT' || targetElement.tagName === 'SELECT') && 
+                document.activeElement !== targetElement) {
+                e.preventDefault();
+                // Focus with delay to ensure proper handling
+                setTimeout(() => {
+                    targetElement.focus();
+                }, 100);
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>
