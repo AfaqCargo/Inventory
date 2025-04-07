@@ -189,12 +189,12 @@
             .mobile-input {
                 height: 38px;
                 padding: 8px 12px;
-                font-size: 16px; /* Native size to prevent iOS zoom */
+                font-size: 16px;
             }
             
             .mobile-select {
                 height: 38px;
-                font-size: 16px; /* Native size to prevent iOS zoom */
+                font-size: 16px;
             }
             
             /* Fix for iOS input zoom */
@@ -270,8 +270,9 @@
         // Size options
         const sizeOptions = ["XS", "S", "M", "L", "XL", "S Goni", "M Goni", "L Goni"];
         
-        // Track currently focused element for mobile
+        // Track currently focused element and its value
         let focusedElement = null;
+        let currentInputValue = null;
         
         // Check if device is mobile
         function isMobile() {
@@ -293,10 +294,52 @@
             }
         }
         
-        // Render completely new mobile view with simpler HTML structure
+        // Render mobile view without destroying existing inputs if possible
         function renderMobileView() {
             const mobileView = document.getElementById('mobileView');
             const tableRows = document.querySelectorAll('#tableBody tr');
+            
+            // If mobile view already has cards, update them instead of recreating
+            const existingCards = mobileView.querySelectorAll('.mobile-card');
+            
+            if (existingCards.length === tableRows.length) {
+                // Update existing cards
+                tableRows.forEach((row, index) => {
+                    const card = existingCards[index];
+                    if (!card) return;
+                    
+                    const markName = row.querySelector('.mark-name').value || '';
+                    const itemName = row.querySelector('.item-name').value || '';
+                    const sizeSelect = row.querySelector('.size-select');
+                    const size = sizeSelect ? sizeSelect.value : '';
+                    const qty = row.querySelector('.qty-value').value || '0';
+                    
+                    // Only update if not currently focused
+                    const markInput = card.querySelector('.mobile-mark-name');
+                    if (markInput !== document.activeElement) {
+                        markInput.value = markName;
+                    }
+                    
+                    const itemInput = card.querySelector('.mobile-item-name');
+                    if (itemInput !== document.activeElement) {
+                        itemInput.value = itemName;
+                    }
+                    
+                    const sizeSelectInput = card.querySelector('.mobile-size-select');
+                    if (sizeSelectInput !== document.activeElement) {
+                        sizeSelectInput.value = size;
+                    }
+                    
+                    const qtyInput = card.querySelector('.mobile-qty-value');
+                    if (qtyInput !== document.activeElement) {
+                        qtyInput.value = qty;
+                    }
+                });
+                
+                return;
+            }
+            
+            // Otherwise create new cards
             let mobileHtml = '';
             
             tableRows.forEach((row, index) => {
@@ -343,27 +386,35 @@
             
             mobileView.innerHTML = mobileHtml;
             
-            // Restore focus if there was a focused element before render
-            if (focusedElement) {
-                const { selector, position } = focusedElement;
-                const element = document.querySelector(selector);
-                if (element) {
-                    element.focus();
-                    if (element.setSelectionRange && position) {
-                        element.setSelectionRange(position, position);
+            // Setup event listeners for the new cards
+            setupMobileEventListeners();
+        }
+        
+        // Setup event listeners for mobile view
+        function setupMobileEventListeners() {
+            // Track focus events to prevent re-render from clearing input
+            document.querySelectorAll('.mobile-mark-name, .mobile-item-name, .mobile-size-select, .mobile-qty-value').forEach(input => {
+                input.addEventListener('focus', function() {
+                    focusedElement = this;
+                    currentInputValue = this.value;
+                });
+                
+                input.addEventListener('blur', function() {
+                    if (focusedElement === this) {
+                        focusedElement = null;
+                        currentInputValue = null;
                     }
-                }
-                focusedElement = null;
-            }
+                });
+            });
             
-            // Add event listeners for quantity buttons
+            // Quantity buttons
             document.querySelectorAll('.mobile-qty-decrease').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const qtyInput = this.nextElementSibling;
                     let qty = parseInt(qtyInput.value) || 0;
                     if (qty > 0) {
                         qtyInput.value = qty - 1;
-                        debouncedUpdateTableFromMobile();
+                        updateTableFromMobile();
                     }
                 });
             });
@@ -373,58 +424,54 @@
                     const qtyInput = this.previousElementSibling;
                     let qty = parseInt(qtyInput.value) || 0;
                     qtyInput.value = qty + 1;
-                    debouncedUpdateTableFromMobile();
+                    updateTableFromMobile();
                 });
             });
             
-            // Add change listeners for all mobile inputs
-            document.querySelectorAll('.mobile-mark-name, .mobile-item-name, .mobile-size-select').forEach(input => {
-                input.addEventListener('change', function() {
-                    debouncedUpdateTableFromMobile();
-                });
-            });
+            // Input changes - with debouncing
+            const debouncedUpdate = debounce(updateTableFromMobile, 300);
             
-            // Add input listeners for text inputs
             document.querySelectorAll('.mobile-mark-name, .mobile-item-name').forEach(input => {
                 input.addEventListener('input', function() {
-                    debouncedUpdateTableFromMobile();
+                    if (focusedElement === this) {
+                        currentInputValue = this.value;
+                    }
+                    debouncedUpdate();
                 });
             });
             
-            // Special handling for quantity inputs
+            document.querySelectorAll('.mobile-size-select').forEach(select => {
+                select.addEventListener('change', function() {
+                    updateTableFromMobile();
+                });
+            });
+            
             document.querySelectorAll('.mobile-qty-value').forEach(input => {
                 input.addEventListener('input', function() {
-                    // Ensure it's a valid number
                     if (isNaN(parseInt(this.value)) && this.value !== '') {
                         this.value = 0;
                     }
-                    debouncedUpdateTableFromMobile();
-                });
-                
-                input.addEventListener('change', function() {
-                    debouncedUpdateTableFromMobile();
-                });
-            });
-            
-            // Track focus for mobile inputs
-            document.querySelectorAll('.mobile-input, .mobile-select, .mobile-qty-value').forEach(input => {
-                input.addEventListener('focus', function() {
-                    // Store the currently focused element
-                    const selector = `.mobile-card[data-row-index="${this.closest('.mobile-card').getAttribute('data-row-index')}"] ${this.className.split(' ').map(c => '.' + c).join('')}`;
-                    const position = this.selectionStart;
-                    focusedElement = { selector, position };
+                    if (focusedElement === this) {
+                        currentInputValue = this.value;
+                    }
+                    debouncedUpdate();
                 });
             });
         }
         
-        // Debounce function to prevent rapid updates
-        let debounceTimer;
-        function debouncedUpdateTableFromMobile() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(updateTableFromMobile, 300);
+        // Simple debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this, args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => {
+                    func.apply(context, args);
+                }, wait);
+            };
         }
         
-        // Update main table data from mobile view
+        // Update main table from mobile view
         function updateTableFromMobile() {
             const mobileCards = document.querySelectorAll('.mobile-card');
             const tableBody = document.getElementById('tableBody');
@@ -446,66 +493,58 @@
                 }
             });
             
-            // Save data after updates
             saveTableData();
         }
         
-        // Wait for DOM to be fully loaded
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            // Load saved data from localStorage
+            // Load saved data
             loadTableData();
             
-            // Initial view update
+            // Set initial view mode
             updateViewMode();
             
-            // Update view on resize with debounce
-            let resizeTimer;
-            window.addEventListener('resize', function() {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(updateViewMode, 250);
-            });
+            // Handle window resize with debounce
+            const resizeDebounce = debounce(updateViewMode, 250);
+            window.addEventListener('resize', resizeDebounce);
             
-            // Add row button click event
+            // Add row button
             document.getElementById("addRow").addEventListener("click", function() {
                 addNewRow();
-                updateViewMode(); // Refresh the view to show the new row
+                updateViewMode();
                 saveTableData();
             });
             
-            // Export to Excel button click event
-            document.getElementById("exportExcel").addEventListener("click", function() {
-                exportToExcel();
-            });
+            // Export to Excel
+            document.getElementById("exportExcel").addEventListener("click", exportToExcel);
             
-            // Event delegation for table events
+            // Table view events
             document.getElementById("tableBody").addEventListener("click", function(e) {
-                // Handle decrease button click
                 if (e.target.classList.contains("qty-decrease")) {
                     const qtyInput = e.target.nextElementSibling;
-                    let qty = parseInt(qtyInput.value);
+                    let qty = parseInt(qtyInput.value) || 0;
                     if (qty > 0) {
                         qtyInput.value = qty - 1;
                         saveTableData();
                     }
                 }
                 
-                // Handle increase button click
                 if (e.target.classList.contains("qty-increase")) {
                     const qtyInput = e.target.previousElementSibling;
-                    let qty = parseInt(qtyInput.value);
+                    let qty = parseInt(qtyInput.value) || 0;
                     qtyInput.value = qty + 1;
                     saveTableData();
                 }
             });
             
-            // Handle input changes in table view
+            // Input changes in table view
             document.getElementById("tableBody").addEventListener("input", function(e) {
                 if (e.target.classList.contains("form-control")) {
                     saveTableData();
                 }
             });
             
-            // Handle select changes in table view
+            // Select changes in table view
             document.getElementById("tableBody").addEventListener("change", function(e) {
                 if (e.target.classList.contains("size-select")) {
                     saveTableData();
@@ -513,11 +552,10 @@
             });
         });
         
-        // Function to add a new row
+        // Add a new row to the table
         function addNewRow() {
             const newRow = document.createElement("tr");
             
-            // Create size dropdown options
             let sizeOptionsHtml = `<option value="">Select Size</option>`;
             sizeOptions.forEach(size => {
                 sizeOptionsHtml += `<option value="${size}">${size}</option>`;
@@ -543,47 +581,39 @@
             document.getElementById("tableBody").appendChild(newRow);
         }
         
-        // Function to save table data to localStorage
+        // Save table data to localStorage
         function saveTableData() {
             const tableData = [];
             const rows = document.querySelectorAll("#tableBody tr");
             
             rows.forEach(row => {
-                const markName = row.querySelector(".mark-name").value;
-                const itemName = row.querySelector(".item-name").value;
-                const size = row.querySelector(".size-select").value;
-                const qty = row.querySelector(".qty-value").value;
-                
                 tableData.push({
-                    markName: markName,
-                    itemName: itemName,
-                    size: size,
-                    qty: qty
+                    markName: row.querySelector(".mark-name").value,
+                    itemName: row.querySelector(".item-name").value,
+                    size: row.querySelector(".size-select").value,
+                    qty: row.querySelector(".qty-value").value
                 });
             });
             
             localStorage.setItem("inventoryTableData", JSON.stringify(tableData));
         }
         
-        // Function to load table data from localStorage
+        // Load table data from localStorage
         function loadTableData() {
             const savedData = localStorage.getItem("inventoryTableData");
             
             if (savedData) {
                 const tableData = JSON.parse(savedData);
                 const tableBody = document.getElementById("tableBody");
-                tableBody.innerHTML = ''; // Clear existing rows
+                tableBody.innerHTML = '';
                 
                 tableData.forEach(rowData => {
-                    const newRow = document.createElement("tr");
-                    
-                    // Create size dropdown options with selected value
                     let sizeOptionsHtml = `<option value="">Size</option>`;
                     sizeOptions.forEach(size => {
-                        const selected = size === rowData.size ? 'selected' : '';
-                        sizeOptionsHtml += `<option value="${size}" ${selected}>${size}</option>`;
+                        sizeOptionsHtml += `<option value="${size}" ${size === rowData.size ? 'selected' : ''}>${size}</option>`;
                     });
                     
+                    const newRow = document.createElement("tr");
                     newRow.innerHTML = `
                         <td><input type="text" class="form-control mark-name" placeholder="Mark Name" value="${rowData.markName || ''}"></td>
                         <td><input type="text" class="form-control item-name" placeholder="Item" value="${rowData.itemName || ''}"></td>
@@ -603,50 +633,35 @@
                     tableBody.appendChild(newRow);
                 });
             } else {
-                // Add one empty row by default
                 addNewRow();
             }
         }
         
-        // Function to export table data to Excel
+        // Export to Excel function
         function exportToExcel() {
             try {
-                const data = [];
-                const headers = ["Mark Name", "Item", "Size", "Qty"];
-                data.push(headers);
+                const data = [["Mark Name", "Item", "Size", "Qty"]];
                 
-                // Get row data
-                const rows = document.querySelectorAll("#tableBody tr");
-                rows.forEach(row => {
-                    const rowData = [
+                document.querySelectorAll("#tableBody tr").forEach(row => {
+                    data.push([
                         row.querySelector(".mark-name").value || "",
                         row.querySelector(".item-name").value || "",
                         row.querySelector(".size-select").value || "",
                         row.querySelector(".qty-value").value || "0"
-                    ];
-                    data.push(rowData);
+                    ]);
                 });
                 
-                // Create worksheet
                 const ws = XLSX.utils.aoa_to_sheet(data);
-                
-                // Set column widths
                 ws['!cols'] = [
-                    { wch: 15 }, // Mark Name
-                    { wch: 15 }, // Item
-                    { wch: 10 }, // Size
-                    { wch: 8 }   // Qty
+                    { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 8 }
                 ];
                 
-                // Create workbook and add worksheet
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-                
-                // Generate Excel file and trigger download
                 XLSX.writeFile(wb, "Inventory_Data.xlsx");
             } catch (error) {
                 console.error("Export error:", error);
-                alert("There was an error exporting to Excel.");
+                alert("Error exporting to Excel");
             }
         }
     </script>
