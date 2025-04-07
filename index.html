@@ -196,6 +196,16 @@
                 height: 38px;
                 font-size: 16px; /* Native size to prevent iOS zoom */
             }
+            
+            /* Fix for iOS input zoom */
+            @media screen and (-webkit-min-device-pixel-ratio:0) {
+                input[type="text"],
+                input[type="number"],
+                select,
+                textarea {
+                    font-size: 16px !important;
+                }
+            }
         }
     </style>
 </head>
@@ -255,409 +265,390 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <!-- SheetJS for Excel export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
     <script>
-    // Size options
-    const sizeOptions = ["XS", "S", "M", "L", "XL", "S Goni", "M Goni", "L Goni"];
-    
-    // Track if we're currently in mobile view
-    let isMobileView = false;
-    
-    // Check if device is mobile
-    function isMobile() {
-        return window.innerWidth < 576;
-    }
-    
-    // Update view based on screen size
-    function updateViewMode() {
-        const tableContainer = document.querySelector('.table-container');
-        const mobileView = document.getElementById('mobileView');
+        // Size options
+        const sizeOptions = ["XS", "S", "M", "L", "XL", "S Goni", "M Goni", "L Goni"];
         
-        if (isMobile()) {
-            tableContainer.classList.add('d-none');
-            mobileView.classList.remove('d-none');
-            if (!isMobileView) {
-                renderMobileView();
-                isMobileView = true;
-            }
-        } else {
-            tableContainer.classList.remove('d-none');
-            mobileView.classList.add('d-none');
-            isMobileView = false;
+        // Track currently focused element for mobile
+        let focusedElement = null;
+        
+        // Check if device is mobile
+        function isMobile() {
+            return window.innerWidth < 576;
         }
-    }
-    
-    // Render completely new mobile view with simpler HTML structure
-    function renderMobileView() {
-        const mobileView = document.getElementById('mobileView');
-        const tableRows = document.querySelectorAll('#tableBody tr');
-        let mobileHtml = '';
         
-        tableRows.forEach((row, index) => {
-            const markName = row.querySelector('.mark-name').value || '';
-            const itemName = row.querySelector('.item-name').value || '';
-            const sizeSelect = row.querySelector('.size-select');
-            const size = sizeSelect ? sizeSelect.value : '';
-            const qty = row.querySelector('.qty-value').value || '0';
+        // Update view based on screen size
+        function updateViewMode() {
+            const tableContainer = document.querySelector('.table-container');
+            const mobileView = document.getElementById('mobileView');
             
-            mobileHtml += `
-                <div class="mobile-card" data-row-index="${index}">
-                    <div class="mobile-card-body">
-                        <div class="mobile-row">
-                            <label class="mobile-label">Mark Name</label>
-                            <input type="text" class="form-control mobile-input mobile-mark-name" 
-                                value="${markName}" placeholder="Mark Name">
-                        </div>
-                        <div class="mobile-row">
-                            <label class="mobile-label">Item</label>
-                            <input type="text" class="form-control mobile-input mobile-item-name" 
-                                value="${itemName}" placeholder="Item">
-                        </div>
-                        <div class="mobile-row">
-                            <label class="mobile-label">Size</label>
-                            <select class="form-select mobile-select mobile-size-select">
-                                <option value="">Size</option>
-                                ${sizeOptions.map(option => 
-                                    `<option value="${option}" ${option === size ? 'selected' : ''}>${option}</option>`
-                                ).join('')}
-                            </select>
-                        </div>
-                        <div class="mobile-row">
-                            <label class="mobile-label">Quantity</label>
-                            <div class="mobile-qty-control">
-                                <button class="qty-btn mobile-qty-decrease" type="button">-</button>
-                                <input type="number" pattern="[0-9]*" inputmode="numeric" 
-                                    class="qty-value mobile-qty-value" value="${qty}">
-                                <button class="qty-btn mobile-qty-increase" type="button">+</button>
+            if (isMobile()) {
+                tableContainer.classList.add('d-none');
+                mobileView.classList.remove('d-none');
+                renderMobileView();
+            } else {
+                tableContainer.classList.remove('d-none');
+                mobileView.classList.add('d-none');
+            }
+        }
+        
+        // Render completely new mobile view with simpler HTML structure
+        function renderMobileView() {
+            const mobileView = document.getElementById('mobileView');
+            const tableRows = document.querySelectorAll('#tableBody tr');
+            let mobileHtml = '';
+            
+            tableRows.forEach((row, index) => {
+                const markName = row.querySelector('.mark-name').value || '';
+                const itemName = row.querySelector('.item-name').value || '';
+                const sizeSelect = row.querySelector('.size-select');
+                const size = sizeSelect ? sizeSelect.value : '';
+                const qty = row.querySelector('.qty-value').value || '0';
+                
+                mobileHtml += `
+                    <div class="mobile-card" data-row-index="${index}">
+                        <div class="mobile-card-body">
+                            <div class="mobile-row">
+                                <label class="mobile-label">Mark Name</label>
+                                <input type="text" class="form-control mobile-input mobile-mark-name" 
+                                    value="${markName}" placeholder="Mark Name">
+                            </div>
+                            <div class="mobile-row">
+                                <label class="mobile-label">Item</label>
+                                <input type="text" class="form-control mobile-input mobile-item-name" 
+                                    value="${itemName}" placeholder="Item">
+                            </div>
+                            <div class="mobile-row">
+                                <label class="mobile-label">Size</label>
+                                <select class="form-select mobile-select mobile-size-select">
+                                    <option value="">Size</option>
+                                    ${sizeOptions.map(option => 
+                                        `<option value="${option}" ${option === size ? 'selected' : ''}>${option}</option>`
+                                    ).join('')}
+                                </select>
+                            </div>
+                            <div class="mobile-row">
+                                <label class="mobile-label">Quantity</label>
+                                <div class="mobile-qty-control">
+                                    <button class="qty-btn mobile-qty-decrease" type="button">-</button>
+                                    <input type="number" pattern="[0-9]*" inputmode="numeric" class="qty-value mobile-qty-value" value="${qty}">
+                                    <button class="qty-btn mobile-qty-increase" type="button">+</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
-        });
-        
-        mobileView.innerHTML = mobileHtml;
-        
-        // Add event listeners for quantity buttons
-        document.querySelectorAll('.mobile-qty-decrease').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const qtyInput = this.nextElementSibling;
-                let qty = parseInt(qtyInput.value) || 0;
-                if (qty > 0) {
-                    qtyInput.value = qty - 1;
-                    updateTableFromMobile();
-                }
-            });
-        });
-        
-        document.querySelectorAll('.mobile-qty-increase').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const qtyInput = this.previousElementSibling;
-                let qty = parseInt(qtyInput.value) || 0;
-                qtyInput.value = qty + 1;
-                updateTableFromMobile();
-            });
-        });
-        
-        // Add change listeners for all mobile inputs
-        document.querySelectorAll('.mobile-input, .mobile-select').forEach(input => {
-            input.addEventListener('change', function() {
-                updateTableFromMobile();
-            });
-        });
-        
-        // Special handling for quantity inputs
-        document.querySelectorAll('.mobile-qty-value').forEach(input => {
-            // Use 'input' event for immediate feedback
-            input.addEventListener('input', function() {
-                // Ensure it's a valid number
-                if (isNaN(parseInt(this.value)) {
-                    this.value = 0;
-                }
-                updateTableFromMobile();
+                `;
             });
             
-            // Also listen for blur in case user types and leaves
-            input.addEventListener('blur', function() {
-                if (this.value === '') {
-                    this.value = 0;
-                }
-                updateTableFromMobile();
-            });
-        });
-        
-        // iOS specific fixes
-        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            // Prevent zoom on input focus
-            document.querySelectorAll('input, select').forEach(el => {
-                el.addEventListener('focus', function() {
-                    document.body.style.zoom = '0.999';
-                });
-                
-                el.addEventListener('blur', function() {
-                    document.body.style.zoom = '';
-                });
-            });
-        }
-    }
-    
-    // Update main table data from mobile view
-    function updateTableFromMobile() {
-        const mobileCards = document.querySelectorAll('.mobile-card');
-        const tableBody = document.getElementById('tableBody');
-        
-        mobileCards.forEach((card, index) => {
-            const rowIndex = card.getAttribute('data-row-index');
-            const row = tableBody.rows[rowIndex];
+            mobileView.innerHTML = mobileHtml;
             
-            if (row) {
-                const markName = card.querySelector('.mobile-mark-name').value;
-                const itemName = card.querySelector('.mobile-item-name').value;
-                const size = card.querySelector('.mobile-size-select').value;
-                const qty = card.querySelector('.mobile-qty-value').value;
-                
-                row.querySelector('.mark-name').value = markName;
-                row.querySelector('.item-name').value = itemName;
-                row.querySelector('.size-select').value = size;
-                row.querySelector('.qty-value').value = qty;
-            }
-        });
-        
-        // Save data after updates
-        saveTableData();
-    }
-    
-    // Wait for DOM to be fully loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load saved data from localStorage
-        loadTableData();
-        
-        // Initial view update
-        updateViewMode();
-        
-        // Update view on resize with debounce
-        let resizeTimer;
-        window.addEventListener('resize', function() {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() {
-                const wasMobile = isMobileView;
-                updateViewMode();
-                
-                // Only re-render if switching between mobile/desktop
-                if (wasMobile !== isMobileView) {
-                    if (isMobileView) {
-                        renderMobileView();
+            // Restore focus if there was a focused element before render
+            if (focusedElement) {
+                const { selector, position } = focusedElement;
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.focus();
+                    if (element.setSelectionRange && position) {
+                        element.setSelectionRange(position, position);
                     }
                 }
-            }, 250);
-        });
-        
-        // Add row button click event
-        document.getElementById("addRow").addEventListener("click", function() {
-            addNewRow();
-            if (isMobileView) {
-                renderMobileView();
+                focusedElement = null;
             }
+            
+            // Add event listeners for quantity buttons
+            document.querySelectorAll('.mobile-qty-decrease').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const qtyInput = this.nextElementSibling;
+                    let qty = parseInt(qtyInput.value) || 0;
+                    if (qty > 0) {
+                        qtyInput.value = qty - 1;
+                        debouncedUpdateTableFromMobile();
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.mobile-qty-increase').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const qtyInput = this.previousElementSibling;
+                    let qty = parseInt(qtyInput.value) || 0;
+                    qtyInput.value = qty + 1;
+                    debouncedUpdateTableFromMobile();
+                });
+            });
+            
+            // Add change listeners for all mobile inputs
+            document.querySelectorAll('.mobile-mark-name, .mobile-item-name, .mobile-size-select').forEach(input => {
+                input.addEventListener('change', function() {
+                    debouncedUpdateTableFromMobile();
+                });
+            });
+            
+            // Add input listeners for text inputs
+            document.querySelectorAll('.mobile-mark-name, .mobile-item-name').forEach(input => {
+                input.addEventListener('input', function() {
+                    debouncedUpdateTableFromMobile();
+                });
+            });
+            
+            // Special handling for quantity inputs
+            document.querySelectorAll('.mobile-qty-value').forEach(input => {
+                input.addEventListener('input', function() {
+                    // Ensure it's a valid number
+                    if (isNaN(parseInt(this.value)) && this.value !== '') {
+                        this.value = 0;
+                    }
+                    debouncedUpdateTableFromMobile();
+                });
+                
+                input.addEventListener('change', function() {
+                    debouncedUpdateTableFromMobile();
+                });
+            });
+            
+            // Track focus for mobile inputs
+            document.querySelectorAll('.mobile-input, .mobile-select, .mobile-qty-value').forEach(input => {
+                input.addEventListener('focus', function() {
+                    // Store the currently focused element
+                    const selector = `.mobile-card[data-row-index="${this.closest('.mobile-card').getAttribute('data-row-index')}"] ${this.className.split(' ').map(c => '.' + c).join('')}`;
+                    const position = this.selectionStart;
+                    focusedElement = { selector, position };
+                });
+            });
+        }
+        
+        // Debounce function to prevent rapid updates
+        let debounceTimer;
+        function debouncedUpdateTableFromMobile() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateTableFromMobile, 300);
+        }
+        
+        // Update main table data from mobile view
+        function updateTableFromMobile() {
+            const mobileCards = document.querySelectorAll('.mobile-card');
+            const tableBody = document.getElementById('tableBody');
+            
+            mobileCards.forEach((card, index) => {
+                const rowIndex = card.getAttribute('data-row-index');
+                const row = tableBody.rows[rowIndex];
+                
+                if (row) {
+                    const markName = card.querySelector('.mobile-mark-name').value;
+                    const itemName = card.querySelector('.mobile-item-name').value;
+                    const size = card.querySelector('.mobile-size-select').value;
+                    const qty = card.querySelector('.mobile-qty-value').value;
+                    
+                    row.querySelector('.mark-name').value = markName;
+                    row.querySelector('.item-name').value = itemName;
+                    row.querySelector('.size-select').value = size;
+                    row.querySelector('.qty-value').value = qty;
+                }
+            });
+            
+            // Save data after updates
             saveTableData();
-        });
+        }
         
-        // Export to Excel button click event
-        document.getElementById("exportExcel").addEventListener("click", function() {
-            exportToExcel();
-        });
-        
-        // Event delegation for table events
-        document.getElementById("tableBody").addEventListener("click", function(e) {
-            // Handle decrease button click
-            if (e.target.classList.contains("qty-decrease")) {
-                const qtyInput = e.target.nextElementSibling;
-                let qty = parseInt(qtyInput.value);
-                if (qty > 0) {
-                    qtyInput.value = qty - 1;
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load saved data from localStorage
+            loadTableData();
+            
+            // Initial view update
+            updateViewMode();
+            
+            // Update view on resize with debounce
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(updateViewMode, 250);
+            });
+            
+            // Add row button click event
+            document.getElementById("addRow").addEventListener("click", function() {
+                addNewRow();
+                updateViewMode(); // Refresh the view to show the new row
+                saveTableData();
+            });
+            
+            // Export to Excel button click event
+            document.getElementById("exportExcel").addEventListener("click", function() {
+                exportToExcel();
+            });
+            
+            // Event delegation for table events
+            document.getElementById("tableBody").addEventListener("click", function(e) {
+                // Handle decrease button click
+                if (e.target.classList.contains("qty-decrease")) {
+                    const qtyInput = e.target.nextElementSibling;
+                    let qty = parseInt(qtyInput.value);
+                    if (qty > 0) {
+                        qtyInput.value = qty - 1;
+                        saveTableData();
+                    }
+                }
+                
+                // Handle increase button click
+                if (e.target.classList.contains("qty-increase")) {
+                    const qtyInput = e.target.previousElementSibling;
+                    let qty = parseInt(qtyInput.value);
+                    qtyInput.value = qty + 1;
                     saveTableData();
                 }
-            }
-            
-            // Handle increase button click
-            if (e.target.classList.contains("qty-increase")) {
-                const qtyInput = e.target.previousElementSibling;
-                let qty = parseInt(qtyInput.value);
-                qtyInput.value = qty + 1;
-                saveTableData();
-            }
-        });
-        
-        // Handle input changes in table view
-        document.getElementById("tableBody").addEventListener("input", function(e) {
-            if (e.target.classList.contains("form-control")) {
-                saveTableData();
-            }
-        });
-        
-        // Handle select changes in table view
-        document.getElementById("tableBody").addEventListener("change", function(e) {
-            if (e.target.classList.contains("size-select")) {
-                saveTableData();
-            }
-        });
-
-        // iOS specific fixes
-        if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-            // Prevent zoom on input focus
-            document.querySelectorAll('input, select').forEach(el => {
-                el.addEventListener('focus', function() {
-                    document.body.style.zoom = '0.999';
-                });
-                
-                el.addEventListener('blur', function() {
-                    document.body.style.zoom = '';
-                });
             });
             
-            // Add meta tag to prevent zooming
-            const meta = document.createElement('meta');
-            meta.name = 'viewport';
-            meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-            document.head.appendChild(meta);
+            // Handle input changes in table view
+            document.getElementById("tableBody").addEventListener("input", function(e) {
+                if (e.target.classList.contains("form-control")) {
+                    saveTableData();
+                }
+            });
+            
+            // Handle select changes in table view
+            document.getElementById("tableBody").addEventListener("change", function(e) {
+                if (e.target.classList.contains("size-select")) {
+                    saveTableData();
+                }
+            });
+        });
+        
+        // Function to add a new row
+        function addNewRow() {
+            const newRow = document.createElement("tr");
+            
+            // Create size dropdown options
+            let sizeOptionsHtml = `<option value="">Select Size</option>`;
+            sizeOptions.forEach(size => {
+                sizeOptionsHtml += `<option value="${size}">${size}</option>`;
+            });
+            
+            newRow.innerHTML = `
+                <td><input type="text" class="form-control mark-name" placeholder="Mark Name"></td>
+                <td><input type="text" class="form-control item-name" placeholder="Item"></td>
+                <td>
+                    <select class="form-select size-select">
+                        ${sizeOptionsHtml}
+                    </select>
+                </td>
+                <td>
+                    <div class="qty-control">
+                        <span class="qty-btn qty-decrease">-</span>
+                        <input type="text" class="qty-value" value="0" readonly>
+                        <span class="qty-btn qty-increase">+</span>
+                    </div>
+                </td>
+            `;
+            
+            document.getElementById("tableBody").appendChild(newRow);
         }
-    });
-    
-    // Rest of your functions (addNewRow, saveTableData, loadTableData, exportToExcel) remain the same
-    // Function to add a new row
-    function addNewRow() {
-        const newRow = document.createElement("tr");
         
-        // Create size dropdown options
-        let sizeOptionsHtml = `<option value="">Select Size</option>`;
-        sizeOptions.forEach(size => {
-            sizeOptionsHtml += `<option value="${size}">${size}</option>`;
-        });
-        
-        newRow.innerHTML = `
-            <td><input type="text" class="form-control mark-name" placeholder="Mark Name"></td>
-            <td><input type="text" class="form-control item-name" placeholder="Item"></td>
-            <td>
-                <select class="form-select size-select">
-                    ${sizeOptionsHtml}
-                </select>
-            </td>
-            <td>
-                <div class="qty-control">
-                    <span class="qty-btn qty-decrease">-</span>
-                    <input type="text" class="qty-value" value="0" readonly>
-                    <span class="qty-btn qty-increase">+</span>
-                </div>
-            </td>
-        `;
-        
-        document.getElementById("tableBody").appendChild(newRow);
-    }
-    
-    // Function to save table data to localStorage
-    function saveTableData() {
-        const tableData = [];
-        const rows = document.querySelectorAll("#tableBody tr");
-        
-        rows.forEach(row => {
-            const markName = row.querySelector(".mark-name").value;
-            const itemName = row.querySelector(".item-name").value;
-            const size = row.querySelector(".size-select").value;
-            const qty = row.querySelector(".qty-value").value;
-            
-            tableData.push({
-                markName: markName,
-                itemName: itemName,
-                size: size,
-                qty: qty
-            });
-        });
-        
-        localStorage.setItem("inventoryTableData", JSON.stringify(tableData));
-    }
-    
-    // Function to load table data from localStorage
-    function loadTableData() {
-        const savedData = localStorage.getItem("inventoryTableData");
-        
-        if (savedData) {
-            const tableData = JSON.parse(savedData);
-            const tableBody = document.getElementById("tableBody");
-            tableBody.innerHTML = ''; // Clear existing rows
-            
-            tableData.forEach(rowData => {
-                const newRow = document.createElement("tr");
-                
-                // Create size dropdown options with selected value
-                let sizeOptionsHtml = `<option value="">Size</option>`;
-                sizeOptions.forEach(size => {
-                    const selected = size === rowData.size ? 'selected' : '';
-                    sizeOptionsHtml += `<option value="${size}" ${selected}>${size}</option>`;
-                });
-                
-                newRow.innerHTML = `
-                    <td><input type="text" class="form-control mark-name" placeholder="Mark Name" value="${rowData.markName || ''}"></td>
-                    <td><input type="text" class="form-control item-name" placeholder="Item" value="${rowData.itemName || ''}"></td>
-                    <td>
-                        <select class="form-select size-select">
-                            ${sizeOptionsHtml}
-                        </select>
-                    </td>
-                    <td>
-                        <div class="qty-control">
-                            <span class="qty-btn qty-decrease">-</span>
-                            <input type="text" class="qty-value" value="${rowData.qty || 0}" readonly>
-                            <span class="qty-btn qty-increase">+</span>
-                        </div>
-                    </td>
-                `;
-                tableBody.appendChild(newRow);
-            });
-        } else {
-            // Add one empty row by default
-            addNewRow();
-        }
-    }
-    
-    // Function to export table data to Excel
-    function exportToExcel() {
-        try {
-            const data = [];
-            const headers = ["Mark Name", "Item", "Size", "Qty"];
-            data.push(headers);
-            
-            // Get row data
+        // Function to save table data to localStorage
+        function saveTableData() {
+            const tableData = [];
             const rows = document.querySelectorAll("#tableBody tr");
+            
             rows.forEach(row => {
-                const rowData = [
-                    row.querySelector(".mark-name").value || "",
-                    row.querySelector(".item-name").value || "",
-                    row.querySelector(".size-select").value || "",
-                    row.querySelector(".qty-value").value || "0"
-                ];
-                data.push(rowData);
+                const markName = row.querySelector(".mark-name").value;
+                const itemName = row.querySelector(".item-name").value;
+                const size = row.querySelector(".size-select").value;
+                const qty = row.querySelector(".qty-value").value;
+                
+                tableData.push({
+                    markName: markName,
+                    itemName: itemName,
+                    size: size,
+                    qty: qty
+                });
             });
             
-            // Create worksheet
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            
-            // Set column widths
-            ws['!cols'] = [
-                { wch: 15 }, // Mark Name
-                { wch: 15 }, // Item
-                { wch: 10 }, // Size
-                { wch: 8 }   // Qty
-            ];
-            
-            // Create workbook and add worksheet
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-            
-            // Generate Excel file and trigger download
-            XLSX.writeFile(wb, "Inventory_Data.xlsx");
-        } catch (error) {
-            console.error("Export error:", error);
-            alert("There was an error exporting to Excel.");
+            localStorage.setItem("inventoryTableData", JSON.stringify(tableData));
         }
-    }
-</script>
+        
+        // Function to load table data from localStorage
+        function loadTableData() {
+            const savedData = localStorage.getItem("inventoryTableData");
+            
+            if (savedData) {
+                const tableData = JSON.parse(savedData);
+                const tableBody = document.getElementById("tableBody");
+                tableBody.innerHTML = ''; // Clear existing rows
+                
+                tableData.forEach(rowData => {
+                    const newRow = document.createElement("tr");
+                    
+                    // Create size dropdown options with selected value
+                    let sizeOptionsHtml = `<option value="">Size</option>`;
+                    sizeOptions.forEach(size => {
+                        const selected = size === rowData.size ? 'selected' : '';
+                        sizeOptionsHtml += `<option value="${size}" ${selected}>${size}</option>`;
+                    });
+                    
+                    newRow.innerHTML = `
+                        <td><input type="text" class="form-control mark-name" placeholder="Mark Name" value="${rowData.markName || ''}"></td>
+                        <td><input type="text" class="form-control item-name" placeholder="Item" value="${rowData.itemName || ''}"></td>
+                        <td>
+                            <select class="form-select size-select">
+                                ${sizeOptionsHtml}
+                            </select>
+                        </td>
+                        <td>
+                            <div class="qty-control">
+                                <span class="qty-btn qty-decrease">-</span>
+                                <input type="text" class="qty-value" value="${rowData.qty || 0}" readonly>
+                                <span class="qty-btn qty-increase">+</span>
+                            </div>
+                        </td>
+                    `;
+                    tableBody.appendChild(newRow);
+                });
+            } else {
+                // Add one empty row by default
+                addNewRow();
+            }
+        }
+        
+        // Function to export table data to Excel
+        function exportToExcel() {
+            try {
+                const data = [];
+                const headers = ["Mark Name", "Item", "Size", "Qty"];
+                data.push(headers);
+                
+                // Get row data
+                const rows = document.querySelectorAll("#tableBody tr");
+                rows.forEach(row => {
+                    const rowData = [
+                        row.querySelector(".mark-name").value || "",
+                        row.querySelector(".item-name").value || "",
+                        row.querySelector(".size-select").value || "",
+                        row.querySelector(".qty-value").value || "0"
+                    ];
+                    data.push(rowData);
+                });
+                
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                
+                // Set column widths
+                ws['!cols'] = [
+                    { wch: 15 }, // Mark Name
+                    { wch: 15 }, // Item
+                    { wch: 10 }, // Size
+                    { wch: 8 }   // Qty
+                ];
+                
+                // Create workbook and add worksheet
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+                
+                // Generate Excel file and trigger download
+                XLSX.writeFile(wb, "Inventory_Data.xlsx");
+            } catch (error) {
+                console.error("Export error:", error);
+                alert("There was an error exporting to Excel.");
+            }
+        }
+    </script>
 </body>
 </html>
