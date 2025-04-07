@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Inventory Management</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --light-gray: #f8f9fa;
+            --border-color: #ced4da;
+        }
+        
+        body {
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        
+        .container-fluid {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 10px;
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            padding: 15px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .btn {
+            border-radius: 5px;
+            font-weight: 500;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table th, .table td {
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .qty-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background-color: var(--light-gray);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 0 5px;
+            user-select: none;
+        }
+        
+        .qty-btn:hover {
+            background-color: #e9ecef;
+        }
+        
+        .qty-value {
+            width: 40px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 2px;
+        }
+        
+        /* Responsive styles for different screen sizes */
+        @media (max-width: 991px) {
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+        
+        @media (max-width: 767px) {
+            .card-title {
+                font-size: 1.25rem;
+            }
+            
+            .btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.9rem;
+            }
+            
+            .table th, .table td {
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .form-control, .form-select {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .qty-btn {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .qty-value {
+                width: 35px;
+            }
+        }
+        
+        @media (max-width: 575px) {
+            body {
+                padding: 5px;
+            }
+            
+            .container-fluid {
+                padding: 0 5px;
+            }
+            
+            .card-header {
+                padding: 10px;
+            }
+            
+            .card-title {
+                font-size: 1.1rem;
+                margin-bottom: 0;
+            }
+            
+            .action-buttons {
+                margin: 10px 0;
+            }
+            
+            .btn {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.85rem;
+            }
+            
+            .table th, .table td {
+                padding: 0.4rem 0.3rem;
+                font-size: 0.85rem;
+            }
+            
+            /* Card view for mobile */
+            .mobile-card-view {
+                display: block;
+            }
+            
+            .mobile-card-view thead {
+                display: none;
+            }
+            
+            .mobile-card-view tbody tr {
+                display: block;
+                margin-bottom: 10px;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+                padding: 8px;
+                background-color: white;
+            }
+            
+            .mobile-card-view tbody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 5px;
+                text-align: right;
+                border-bottom: 1px solid #eee;
+            }
+            
+            .mobile-card-view tbody td:last-child {
+                border-bottom: none;
+                justify-content: center;
+            }
+            
+            .mobile-card-view td:before {
+                content: attr(data-label);
+                font-weight: bold;
+                text-align: left;
+                padding-right: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="card">
+            <div class="page-header">
+                <h2 class="text-center my-4">Inventory Management</h2>
+                
+                <!-- Navigation Links -->
+                <ul class="nav nav-tabs nav-fill" id="pageNavigation" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a href="INDEX.HTML" class="nav-link ">INVENTORY</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="loading.html" class="nav-link active">LOADING</a>
+                    </li>
+                </ul>
+            </div>
