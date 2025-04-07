@@ -345,7 +345,10 @@
             
             // Add event listeners for mobile view
             document.querySelectorAll('.mobile-qty-decrease').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault(); // Prevent default action
+                    e.stopPropagation(); // Stop event propagation
+                    
                     const qtyInput = this.nextElementSibling;
                     let qty = parseInt(qtyInput.value);
                     if (qty > 0) {
@@ -357,7 +360,10 @@
             });
             
             document.querySelectorAll('.mobile-qty-increase').forEach(btn => {
-                btn.addEventListener('click', function() {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault(); // Prevent default action
+                    e.stopPropagation(); // Stop event propagation
+                    
                     const qtyInput = this.previousElementSibling;
                     let qty = parseInt(qtyInput.value);
                     qtyInput.value = qty + 1;
@@ -366,11 +372,45 @@
                 });
             });
             
-            document.querySelectorAll('.mobile-mark-name, .mobile-item-name, .mobile-size-select').forEach(input => {
-                input.addEventListener('change', function() {
+            // Fix for mobile inputs
+            document.querySelectorAll('.mobile-mark-name, .mobile-item-name').forEach(input => {
+                // Use input event instead of change for real-time updates
+                input.addEventListener('input', function() {
+                    // Add small delay to ensure focus is not lost
+                    setTimeout(() => {
+                        syncMobileToTable();
+                        saveTableData();
+                    }, 100);
+                });
+                
+                // Prevent focus loss on click
+                input.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                // Prevent touchstart events from propagating
+                input.addEventListener('touchstart', function(e) {
+                    e.stopPropagation();
+                }, { passive: true });
+            });
+            
+            // Handle select changes
+            document.querySelectorAll('.mobile-size-select').forEach(select => {
+                select.addEventListener('change', function(e) {
+                    e.stopPropagation();
                     syncMobileToTable();
                     saveTableData();
                 });
+                
+                // Prevent focus loss on click
+                select.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+                
+                // Prevent touchstart events from propagating
+                select.addEventListener('touchstart', function(e) {
+                    e.stopPropagation();
+                }, { passive: true });
             });
         }
         
@@ -405,8 +445,12 @@
             // Initial view update
             updateViewMode();
             
-            // Update view on resize
-            window.addEventListener('resize', updateViewMode);
+            // Update view on resize with debounce to prevent excessive updates
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(updateViewMode, 250);
+            });
             
             // Add row button click event
             document.getElementById("addRow").addEventListener("click", function() {
@@ -424,6 +468,9 @@
             document.getElementById("tableBody").addEventListener("click", function(e) {
                 // Handle decrease button click
                 if (e.target.classList.contains("qty-decrease")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
                     const qtyInput = e.target.nextElementSibling;
                     let qty = parseInt(qtyInput.value);
                     if (qty > 0) {
@@ -435,22 +482,41 @@
                 
                 // Handle increase button click
                 if (e.target.classList.contains("qty-increase")) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
                     const qtyInput = e.target.previousElementSibling;
                     let qty = parseInt(qtyInput.value);
                     qtyInput.value = qty + 1;
                     syncTableToMobile();
                     saveTableData();
                 }
-                
             });
             
-            // Handle changes to inputs
+            // Fix for table inputs
+            document.getElementById("tableBody").addEventListener("input", function(e) {
+                if (e.target.classList.contains("form-control")) {
+                    // Add small delay to ensure focus is not lost
+                    setTimeout(() => {
+                        syncTableToMobile();
+                        saveTableData();
+                    }, 100);
+                }
+            });
+            
+            // Handle changes to selects
             document.getElementById("tableBody").addEventListener("change", function(e) {
-                if (e.target.classList.contains("form-control") || 
-                    e.target.classList.contains("size-select")) {
+                if (e.target.classList.contains("size-select")) {
                     syncTableToMobile();
                     saveTableData();
                 }
+            });
+            
+            // Prevent touchstart events from propagating on form elements
+            document.querySelectorAll('input, select').forEach(el => {
+                el.addEventListener('touchstart', function(e) {
+                    e.stopPropagation();
+                }, { passive: true });
             });
         });
         
