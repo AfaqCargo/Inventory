@@ -207,17 +207,90 @@
 </head>
 <body>
     <div class="container-fluid">
-        <div class="card">
-            <div class="page-header">
-                <h2 class="text-center my-4">Inventory Management</h2>
-                
-                <!-- Navigation Links -->
-                <ul class="nav nav-tabs nav-fill" id="pageNavigation" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <a href="index.html" class="nav-link ">INVENTORY</a>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="loading.html" class="nav-link active">LOADING</a>
-                    </li>
-                </ul>
-            </div>
+    <div class="card">
+      <div class="page-header">
+        <h2 class="text-center my-4">Inventory Management</h2>
+        <ul class="nav nav-tabs nav-fill" id="pageNavigation" role="tablist">
+          <li class="nav-item" role="presentation">
+            <a href="index.html" class="nav-link">INVENTORY</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a href="loading.html" class="nav-link active">LOADING</a>
+          </li>
+        </ul>
+      </div>
+      <div class="card-body">
+        <!-- Barcode Input -->
+        <div class="mb-3">
+          <label for="barcodeInput" class="form-label">Scan or Enter Barcode</label>
+          <input type="text" class="form-control" id="barcodeInput" placeholder="Scan barcode here..." autofocus />
+        </div>
+
+        <!-- Barcode Table -->
+        <div class="table-responsive table-container">
+          <table class="table table-bordered" id="barcodeTable">
+            <thead class="table-primary">
+              <tr>
+                <th>Barcode</th>
+                <th>Quantity</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const barcodeInput = document.getElementById("barcodeInput");
+    const tableBody = document.querySelector("#barcodeTable tbody");
+
+    const barcodeMap = {};
+
+    // Focus the input field on load
+    window.onload = () => barcodeInput.focus();
+
+    // Handle barcode scanning
+    barcodeInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        const code = barcodeInput.value.trim();
+        if (code !== "") {
+          updateTable(code);
+        }
+        barcodeInput.value = "";
+      }
+    });
+
+    function updateTable(barcode) {
+      if (barcodeMap[barcode]) {
+        barcodeMap[barcode]++;
+        document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
+      } else {
+        barcodeMap[barcode] = 1;
+        const tr = document.createElement("tr");
+        tr.setAttribute("id", `row-${barcode}`);
+        tr.innerHTML = `
+          <td>${barcode}</td>
+          <td id="qty-${barcode}">1</td>
+          <td class="qty-control">
+            <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
+            <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
+          </td>
+        `;
+        tableBody.appendChild(tr);
+      }
+    }
+
+    function changeQty(barcode, delta) {
+      if (!barcodeMap[barcode]) return;
+      barcodeMap[barcode] += delta;
+      if (barcodeMap[barcode] < 1) {
+        barcodeMap[barcode] = 1;
+      }
+      document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
+    }
+  </script>
+</body>
+</html>
