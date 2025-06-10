@@ -223,7 +223,7 @@
         <!-- Truck No Input -->
         <div class="mb-3">
           <label for="truckNo" class="form-label">Truck No</label>
-          <input type="text" class="form-control" id="truckNo" placeholder="Enter Truck No e.g. 9239.MJA.15" />
+          <input type="number" class="form-control" id="truckNo" placeholder="Enter Truck No (number)" />
         </div>
 
         <!-- Barcode Input -->
@@ -324,23 +324,29 @@
 
     function exportToExcel() {
       const truckNo = truckNoInput.value.trim();
-      if (!truckNo || truckNo.split(".").length !== 3) {
-        alert("Please enter a valid Truck No (format: 9239.MJA.15)");
+      if (!truckNo || isNaN(truckNo)) {
+        alert("Please enter a valid Truck No (number).");
         return;
       }
 
-      const [doNumber, markName, _] = truckNo.split(".");
-
       const data = [["Code", "Mark Name", "DO Number", "Qty"]];
       for (const barcode in barcodeMap) {
-        data.push([truckNo, markName, doNumber, barcodeMap[barcode]]);
+        const parts = barcode.split(".");
+        if(parts.length !== 3) {
+          alert(`Invalid barcode format: ${barcode}. Expected format like 9239.MJA.15`);
+          return;
+        }
+        const [doNumber, markName, codePart] = parts;
+        data.push([barcode, markName, doNumber, barcodeMap[barcode]]);
       }
 
       const worksheet = XLSX.utils.aoa_to_sheet(data);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "LoadingData");
 
-      XLSX.writeFile(workbook, `Loading_${truckNo}.xlsx`);
+      // Add Truck No to sheet name or as a header row (optional)
+      XLSX.utils.book_append_sheet(workbook, worksheet, `Truck_${truckNo}`);
+
+      XLSX.writeFile(workbook, `Loading_Truck_${truckNo}.xlsx`);
     }
   </script>
 </body>
