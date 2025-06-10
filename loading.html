@@ -242,8 +242,10 @@
         </div>
 
         <!-- Export Button -->
-        <div class="mb-4">
+        <div class="mb-4 d-flex justify-content-evenly">
           <button class="btn btn-success" onclick="exportToExcel()">Export to Excel</button>
+          <button onclick="localStorage.removeItem('barcodeMap'); location.reload();">Clear All</button>
+
         </div>
 
         <!-- Barcode Table -->
