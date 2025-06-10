@@ -244,53 +244,73 @@
   </div>
 
   <script>
-    const barcodeInput = document.getElementById("barcodeInput");
-    const tableBody = document.querySelector("#barcodeTable tbody");
+  const barcodeInput = document.getElementById("barcodeInput");
+  const tableBody = document.querySelector("#barcodeTable tbody");
 
-    const barcodeMap = {};
+  let barcodeMap = {};
 
-    // Focus the input field on load
-    window.onload = () => barcodeInput.focus();
-
-    // Handle barcode scanning
-    barcodeInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        const code = barcodeInput.value.trim();
-        if (code !== "") {
-          updateTable(code);
-        }
-        barcodeInput.value = "";
-      }
-    });
-
-    function updateTable(barcode) {
-      if (barcodeMap[barcode]) {
-        barcodeMap[barcode]++;
-        document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
-      } else {
-        barcodeMap[barcode] = 1;
-        const tr = document.createElement("tr");
-        tr.setAttribute("id", `row-${barcode}`);
-        tr.innerHTML = `
-          <td>${barcode}</td>
-          <td id="qty-${barcode}">1</td>
-          <td class="qty-control">
-            <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
-            <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
-          </td>
-        `;
-        tableBody.appendChild(tr);
+  // Load data from localStorage
+  window.onload = () => {
+    barcodeInput.focus();
+    const savedData = localStorage.getItem("barcodeMap");
+    if (savedData) {
+      barcodeMap = JSON.parse(savedData);
+      for (const barcode in barcodeMap) {
+        renderRow(barcode, barcodeMap[barcode]);
       }
     }
+  };
 
-    function changeQty(barcode, delta) {
-      if (!barcodeMap[barcode]) return;
-      barcodeMap[barcode] += delta;
-      if (barcodeMap[barcode] < 1) {
-        barcodeMap[barcode] = 1;
+  // Save data to localStorage
+  function saveData() {
+    localStorage.setItem("barcodeMap", JSON.stringify(barcodeMap));
+  }
+
+  // Handle barcode scanning
+  barcodeInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      const code = barcodeInput.value.trim();
+      if (code !== "") {
+        updateTable(code);
       }
+      barcodeInput.value = "";
+    }
+  });
+
+  function updateTable(barcode) {
+    if (barcodeMap[barcode]) {
+      barcodeMap[barcode]++;
       document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
+    } else {
+      barcodeMap[barcode] = 1;
+      renderRow(barcode, 1);
     }
-  </script>
+    saveData();
+  }
+
+  function renderRow(barcode, quantity) {
+    const tr = document.createElement("tr");
+    tr.setAttribute("id", `row-${barcode}`);
+    tr.innerHTML = `
+      <td>${barcode}</td>
+      <td id="qty-${barcode}">${quantity}</td>
+      <td class="qty-control">
+        <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
+        <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
+      </td>
+    `;
+    tableBody.appendChild(tr);
+  }
+
+  function changeQty(barcode, delta) {
+    if (!barcodeMap[barcode]) return;
+    barcodeMap[barcode] += delta;
+    if (barcodeMap[barcode] < 1) {
+      barcodeMap[barcode] = 1;
+    }
+    document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
+    saveData();
+  }
+</script>
 </body>
 </html>
