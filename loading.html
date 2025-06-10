@@ -266,99 +266,108 @@
   </div>
 
   <script>
-    const barcodeInput = document.getElementById("barcodeInput");
-    const truckNoInput = document.getElementById("truckNo");
-    const tableBody = document.querySelector("#barcodeTable tbody");
-    let barcodeMap = {};
+  const barcodeInput = document.getElementById("barcodeInput");
+  const truckNoInput = document.getElementById("truckNo");
+  const tableBody = document.querySelector("#barcodeTable tbody");
+  let barcodeMap = {};
 
-    // Load from localStorage
-    window.onload = () => {
-      barcodeInput.focus();
-      const savedData = localStorage.getItem("barcodeMap");
-      const savedTruck = localStorage.getItem("truckNo");
-      if (savedTruck) truckNoInput.value = savedTruck;
-      if (savedData) {
-        barcodeMap = JSON.parse(savedData);
-        for (const barcode in barcodeMap) {
-          renderRow(barcode, barcodeMap[barcode]);
-        }
+  let typingTimer;
+  const doneTypingInterval = 300; // ms after user stops typing
+
+  window.onload = () => {
+    barcodeInput.focus();
+    const savedData = localStorage.getItem("barcodeMap");
+    const savedTruck = localStorage.getItem("truckNo");
+    if (savedTruck) truckNoInput.value = savedTruck;
+    if (savedData) {
+      barcodeMap = JSON.parse(savedData);
+      for (const barcode in barcodeMap) {
+        renderRow(barcode, barcodeMap[barcode]);
       }
-    };
-
-    function saveData() {
-      localStorage.setItem("barcodeMap", JSON.stringify(barcodeMap));
-      localStorage.setItem("truckNo", truckNoInput.value.trim());
     }
+  };
 
-    barcodeInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        const code = barcodeInput.value.trim();
-        if (code !== "") {
-          updateTable(code);
-        }
-        barcodeInput.value = "";
-      }
-    });
+  function saveData() {
+    localStorage.setItem("barcodeMap", JSON.stringify(barcodeMap));
+    localStorage.setItem("truckNo", truckNoInput.value.trim());
+  }
 
-    function updateTable(barcode) {
-      if (barcodeMap[barcode]) {
-        barcodeMap[barcode]++;
-        document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
-      } else {
-        barcodeMap[barcode] = 1;
-        renderRow(barcode, 1);
-      }
-      saveData();
-    }
+  // Instead of Enter key, use debounce on input event
+  barcodeInput.addEventListener("input", () => {
+    clearTimeout(typingTimer);
+    const code = barcodeInput.value.trim();
+    if (code === "") return; // ignore empty input
 
-    function renderRow(barcode, quantity) {
-      const tr = document.createElement("tr");
-      tr.setAttribute("id", `row-${barcode}`);
-      tr.innerHTML = `
-        <td>${barcode}</td>
-        <td id="qty-${barcode}">${quantity}</td>
-        <td class="qty-control">
-          <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
-          <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
-        </td>
-      `;
-      tableBody.appendChild(tr);
-    }
+    typingTimer = setTimeout(() => {
+      updateTable(code);
+      barcodeInput.value = "";
+    }, doneTypingInterval);
+  });
 
-    function changeQty(barcode, delta) {
-      if (!barcodeMap[barcode]) return;
-      barcodeMap[barcode] += delta;
-      if (barcodeMap[barcode] < 1) barcodeMap[barcode] = 1;
+  function updateTable(barcode) {
+    if (barcodeMap[barcode]) {
+      barcodeMap[barcode]++;
       document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
-      saveData();
+    } else {
+      barcodeMap[barcode] = 1;
+      renderRow(barcode, 1);
+    }
+    saveData();
+  }
+
+  function renderRow(barcode, quantity) {
+    if(document.getElementById(`row-${barcode}`)) return; // prevent duplicates
+
+    const tr = document.createElement("tr");
+    tr.setAttribute("id", `row-${barcode}`);
+    tr.innerHTML = `
+      <td>${barcode}</td>
+      <td id="qty-${barcode}">${quantity}</td>
+      <td class="qty-control">
+        <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
+        <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
+      </td>
+    `;
+    tableBody.appendChild(tr);
+  }
+
+  function changeQty(barcode, delta) {
+    if (!barcodeMap[barcode]) return;
+    barcodeMap[barcode] += delta;
+    if (barcodeMap[barcode] < 1) barcodeMap[barcode] = 1;
+    document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
+    saveData();
+  }
+
+  function exportToExcel() {
+    const truckNo = truckNoInput.value.trim();
+    if (!truckNo || isNaN(truckNo)) {
+      alert("Please enter a valid Truck No (number).");
+      return;
     }
 
-    function exportToExcel() {
-      const truckNo = truckNoInput.value.trim();
-      if (!truckNo || isNaN(truckNo)) {
-        alert("Please enter a valid Truck No (number).");
+    const data = [["Code", "Mark Name", "DO Number", "Qty"]];
+    for (const barcode in barcodeMap) {
+      const parts = barcode.split(".");
+      if(parts.length < 2) {
+        alert(`Invalid barcode format: ${barcode}. Expected at least DO_Number.MarkName`);
         return;
       }
+      const doNumber = parts[0];
+      const qtyFromBarcode = parts[parts.length - 1]; // NOT quantity in your case; we ignore this as qty is in barcodeMap
+      const markNameParts = parts.slice(1, parts.length -1);
+      const markName = markNameParts.join(".");
 
-      const data = [["Code", "Mark Name", "DO Number", "Qty"]];
-      for (const barcode in barcodeMap) {
-        const parts = barcode.split(".");
-        if(parts.length !== 3) {
-          alert(`Invalid barcode format: ${barcode}. Expected format like 9239.MJA.15`);
-          return;
-        }
-        const [doNumber, markName, codePart] = parts;
-        data.push([barcode, markName, doNumber, barcodeMap[barcode]]);
-      }
-
-      const worksheet = XLSX.utils.aoa_to_sheet(data);
-      const workbook = XLSX.utils.book_new();
-
-      // Add Truck No to sheet name or as a header row (optional)
-      XLSX.utils.book_append_sheet(workbook, worksheet, `Truck_${truckNo}`);
-
-      XLSX.writeFile(workbook, `Loading_Truck_${truckNo}.xlsx`);
+      data.push([barcode, markName, doNumber, barcodeMap[barcode]]);
     }
-  </script>
+
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, `Truck_${truckNo}`);
+
+    XLSX.writeFile(workbook, `Loading_Truck_${truckNo}.xlsx`);
+  }
+</script>
 </body>
 </html>
