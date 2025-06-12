@@ -316,20 +316,24 @@
   }
 
   function renderRow(barcode, quantity) {
-    if(document.getElementById(`row-${barcode}`)) return; // prevent duplicates
-
-    const tr = document.createElement("tr");
-    tr.setAttribute("id", `row-${barcode}`);
-    tr.innerHTML = `
-      <td>${barcode}</td>
-      <td id="qty-${barcode}">${quantity}</td>
-      <td class="qty-control">
-        <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
-        <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
-      </td>
-    `;
-    tableBody.appendChild(tr);
-  }
+      // Remove existing row if any, so it can be moved to top
+      const existingRow = document.getElementById(`row-${barcode}`);
+      if (existingRow) existingRow.remove();
+    
+      const tr = document.createElement("tr");
+      tr.setAttribute("id", `row-${barcode}`);
+      tr.innerHTML = `
+        <td>${barcode}</td>
+        <td id="qty-${barcode}">${quantity}</td>
+        <td class="qty-control">
+          <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
+          <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
+        </td>
+      `;
+    
+      // Insert at the top
+      tableBody.prepend(tr);
+    }
 
   function changeQty(barcode, delta) {
     if (!barcodeMap[barcode]) return;
