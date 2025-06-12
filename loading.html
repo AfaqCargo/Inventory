@@ -305,20 +305,22 @@
   });
 
   function updateTable(barcode) {
-    if (barcodeMap[barcode]) {
-      barcodeMap[barcode]++;
-      document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
-    } else {
-      barcodeMap[barcode] = 1;
-      renderRow(barcode, 1);
+      if (barcodeMap[barcode]) {
+        barcodeMap[barcode]++;
+      } else {
+        barcodeMap[barcode] = 1;
+      }
+    
+      renderRow(barcode, barcodeMap[barcode]); // Always call renderRow
+      saveData();
     }
-    saveData();
-  }
-
-  function renderRow(barcode, quantity) {
-      // Remove existing row if any, so it can be moved to top
+    
+    function renderRow(barcode, quantity) {
+      // Remove existing row if it already exists
       const existingRow = document.getElementById(`row-${barcode}`);
-      if (existingRow) existingRow.remove();
+      if (existingRow) {
+        existingRow.remove();
+      }
     
       const tr = document.createElement("tr");
       tr.setAttribute("id", `row-${barcode}`);
@@ -330,8 +332,8 @@
           <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
         </td>
       `;
-    
-      // Insert at the top
+      
+      // Add row to the top
       tableBody.prepend(tr);
     }
 
