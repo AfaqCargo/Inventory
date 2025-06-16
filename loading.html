@@ -1,222 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Inventory Management</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #0d6efd;
-            --success-color: #198754;
-            --danger-color: #dc3545;
-            --light-gray: #f8f9fa;
-            --border-color: #ced4da;
-        }
-        
-        body {
-            padding: 10px;
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-        }
-        
-        .container-fluid {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 10px;
-        }
-        
-        .card {
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .card-header {
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: 10px 10px 0 0 !important;
-            padding: 15px;
-        }
-        
-        .action-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 15px 0;
-        }
-        
-        .btn {
-            border-radius: 5px;
-            font-weight: 500;
-        }
-        
-        .table {
-            margin-bottom: 0;
-        }
-        
-        .table th, .table td {
-            vertical-align: middle;
-            text-align: center;
-        }
-        
-        .qty-control {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .qty-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background-color: var(--light-gray);
-            border: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: bold;
-            margin: 0 5px;
-            user-select: none;
-        }
-        
-        .qty-btn:hover {
-            background-color: #e9ecef;
-        }
-        
-        .qty-value {
-            width: 40px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 2px;
-        }
-        
-        /* Responsive styles for different screen sizes */
-        @media (max-width: 991px) {
-            .table-container {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-        }
-        
-        @media (max-width: 767px) {
-            .card-title {
-                font-size: 1.25rem;
-            }
-            
-            .btn {
-                padding: 0.375rem 0.75rem;
-                font-size: 0.9rem;
-            }
-            
-            .table th, .table td {
-                padding: 0.5rem;
-                font-size: 0.9rem;
-            }
-            
-            .form-control, .form-select {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.9rem;
-            }
-            
-            .qty-btn {
-                width: 24px;
-                height: 24px;
-            }
-            
-            .qty-value {
-                width: 35px;
-            }
-        }
-        
-        @media (max-width: 575px) {
-            body {
-                padding: 5px;
-            }
-            
-            .container-fluid {
-                padding: 0 5px;
-            }
-            
-            .card-header {
-                padding: 10px;
-            }
-            
-            .card-title {
-                font-size: 1.1rem;
-                margin-bottom: 0;
-            }
-            
-            .action-buttons {
-                margin: 10px 0;
-            }
-            
-            .btn {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.85rem;
-            }
-            
-            .table th, .table td {
-                padding: 0.4rem 0.3rem;
-                font-size: 0.85rem;
-            }
-            
-            /* Card view for mobile */
-            .mobile-card-view {
-                display: block;
-            }
-            
-            .mobile-card-view thead {
-                display: none;
-            }
-            
-            .mobile-card-view tbody tr {
-                display: block;
-                margin-bottom: 10px;
-                border: 1px solid #dee2e6;
-                border-radius: 5px;
-                padding: 8px;
-                background-color: white;
-            }
-            
-            .mobile-card-view tbody td {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 8px 5px;
-                text-align: right;
-                border-bottom: 1px solid #eee;
-            }
-            
-            .mobile-card-view tbody td:last-child {
-                border-bottom: none;
-                justify-content: center;
-            }
-            
-            .mobile-card-view td:before {
-                content: attr(data-label);
-                font-weight: bold;
-                text-align: left;
-                padding-right: 10px;
-            }
-        }
-    </style>
-</head>
-<!DOCTYPE html>
-<html lang="en">
-<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Inventory Management</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    .qty-control {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .qty-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background-color: #f8f9fa;
+      border: 1px solid #ced4da;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 0 5px;
+    }
+    .qty-btn:hover {
+      background-color: #e9ecef;
+    }
+  </style>
 </head>
 <body>
-  <div class="container-fluid">
-    <div class="card">
+  <div class="container-fluid p-3">
+    <div class="card shadow">
       <div class="page-header">
         <h2 class="text-center my-4">Inventory Management</h2>
         <ul class="nav nav-tabs nav-fill" id="pageNavigation" role="tablist">
@@ -229,27 +42,22 @@
         </ul>
       </div>
       <div class="card-body">
-        <!-- Truck No Input -->
         <div class="mb-3">
           <label for="truckNo" class="form-label">Truck No</label>
           <input type="number" class="form-control" id="truckNo" placeholder="Enter Truck No (number)" />
         </div>
 
-        <!-- Barcode Input -->
         <div class="mb-3">
           <label for="barcodeInput" class="form-label">Scan or Enter Barcode</label>
           <input type="text" class="form-control" id="barcodeInput" placeholder="Scan barcode here..." autofocus />
         </div>
 
-        <!-- Export Button -->
-        <div class="mb-4 d-flex">
-          <button class="btn btn-success mr-5" onclick="exportToExcel()">Export to Excel</button>
+        <div class="mb-4 d-flex gap-3">
+          <button class="btn btn-success" onclick="exportToExcel()">Export to Excel</button>
           <button class="btn btn-primary" onclick="localStorage.removeItem('barcodeMap'); location.reload();">Clear All</button>
-
         </div>
 
-        <!-- Barcode Table -->
-        <div class="table-responsive table-container">
+        <div class="table-responsive">
           <table class="table table-bordered" id="barcodeTable">
             <thead class="table-primary">
               <tr>
@@ -262,121 +70,134 @@
             <tbody></tbody>
           </table>
         </div>
+
+        <div class="text-end mt-2 fw-bold" id="totalQtyDisplay">TOTAL: 0</div>
       </div>
     </div>
   </div>
 
   <script>
-      const barcodeInput = document.getElementById("barcodeInput");
-      const truckNoInput = document.getElementById("truckNo");
-      const tableBody = document.querySelector("#barcodeTable tbody");
-      let barcodeMap = {};
-    
-      let typingTimer;
-      const doneTypingInterval = 300;
-    
-      window.onload = () => {
-        barcodeInput.focus();
-        const savedData = localStorage.getItem("barcodeMap");
-        const savedTruck = localStorage.getItem("truckNo");
-        if (savedTruck) truckNoInput.value = savedTruck;
-        if (savedData) {
-          barcodeMap = JSON.parse(savedData);
-          for (const barcode in barcodeMap) {
-            renderRow(barcode, barcodeMap[barcode]);
-          }
-        }
-      };
-    
-      function saveData() {
-        localStorage.setItem("barcodeMap", JSON.stringify(barcodeMap));
-        localStorage.setItem("truckNo", truckNoInput.value.trim());
-      }
-    
-      barcodeInput.addEventListener("input", () => {
-        clearTimeout(typingTimer);
-        const code = barcodeInput.value.trim();
-        if (code === "") return;
-    
-        typingTimer = setTimeout(() => {
-          updateTable(code);
-          barcodeInput.value = "";
-        }, doneTypingInterval);
-      });
-    
-      function updateTable(barcode) {
-        if (barcodeMap[barcode]) {
-          barcodeMap[barcode]++;
-        } else {
-          barcodeMap[barcode] = 1;
-        }
-        renderRow(barcode, barcodeMap[barcode]);
-        saveData();
-      }
-    
-      function renderRow(barcode, quantity) {
-        const existingRow = document.getElementById(`row-${barcode}`);
-        if (existingRow) {
-          existingRow.remove();
-        }
-    
-        const tr = document.createElement("tr");
-        tr.setAttribute("id", `row-${barcode}`);
-        tr.innerHTML = `
-          <td>${barcode}</td>
-          <td id="qty-${barcode}">${quantity}</td>
-          <td class="qty-control">
-            <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
-            <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
-          </td>
-          <td>
-            <button class="btn btn-sm btn-danger ms-2" onclick="removeRow('${barcode}')">❌</button>
-          </td>
-        `;
-        tableBody.prepend(tr);
-      }
-    
-      function changeQty(barcode, delta) {
-        if (!(barcode in barcodeMap)) barcodeMap[barcode] = 0;
-        barcodeMap[barcode] += delta;
-        if (barcodeMap[barcode] < 0) barcodeMap[barcode] = 0;
-        document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
-        saveData();
-      }
-    
-      function removeRow(barcode) {
-        delete barcodeMap[barcode];
-        const row = document.getElementById(`row-${barcode}`);
-        if (row) row.remove();
-        saveData();
-      }
-    
-      function exportToExcel() {
-        const truckNo = truckNoInput.value.trim();
-        if (!truckNo || isNaN(truckNo)) {
-          alert("Please enter a valid Truck No (number).");
-          return;
-        }
-    
-        const data = [["Code", "Mark Name", "DO Number", "Qty"]];
+    const barcodeInput = document.getElementById("barcodeInput");
+    const truckNoInput = document.getElementById("truckNo");
+    const tableBody = document.querySelector("#barcodeTable tbody");
+    const totalQtyDisplay = document.getElementById("totalQtyDisplay");
+    let barcodeMap = {};
+
+    let typingTimer;
+    const doneTypingInterval = 300;
+
+    window.onload = () => {
+      barcodeInput.focus();
+      const savedData = localStorage.getItem("barcodeMap");
+      const savedTruck = localStorage.getItem("truckNo");
+      if (savedTruck) truckNoInput.value = savedTruck;
+      if (savedData) {
+        barcodeMap = JSON.parse(savedData);
         for (const barcode in barcodeMap) {
-          let doNumber = "Unknown";
-          let markName = "Unknown";
-    
-          const parts = barcode.split(".");
-          if (parts.length >= 2) {
-            doNumber = parts[0];
-            markName = parts.slice(1, parts.length - 1).join(".");
-          }
-    
-          data.push([barcode, markName, doNumber, barcodeMap[barcode]]);
+          renderRow(barcode, barcodeMap[barcode]);
         }
-    
-        const worksheet = XLSX.utils.aoa_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, `Truck_${truckNo}`);
-        XLSX.writeFile(workbook, `Loading_Truck_${truckNo}.xlsx`);
+        updateTotalQty();
       }
-    </script>
+    };
+
+    barcodeInput.addEventListener("input", () => {
+      clearTimeout(typingTimer);
+      const code = barcodeInput.value.trim();
+      if (code === "") return;
+
+      typingTimer = setTimeout(() => {
+        updateTable(code);
+        barcodeInput.value = "";
+      }, doneTypingInterval);
+    });
+
+    function saveData() {
+      localStorage.setItem("barcodeMap", JSON.stringify(barcodeMap));
+      localStorage.setItem("truckNo", truckNoInput.value.trim());
+    }
+
+    function updateTable(barcode) {
+      if (barcodeMap[barcode]) {
+        barcodeMap[barcode]++;
+      } else {
+        barcodeMap[barcode] = 1;
+      }
+      renderRow(barcode, barcodeMap[barcode]);
+      updateTotalQty();
+      saveData();
+    }
+
+    function renderRow(barcode, quantity) {
+      const existingRow = document.getElementById(`row-${barcode}`);
+      if (existingRow) existingRow.remove();
+
+      const tr = document.createElement("tr");
+      tr.setAttribute("id", `row-${barcode}`);
+      tr.innerHTML = `
+        <td>${barcode}</td>
+        <td id="qty-${barcode}">${quantity}</td>
+        <td class="qty-control">
+          <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
+          <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-danger ms-2" onclick="removeRow('${barcode}')">❌</button>
+        </td>
+      `;
+      tableBody.prepend(tr);
+    }
+
+    function changeQty(barcode, delta) {
+      if (!(barcode in barcodeMap)) barcodeMap[barcode] = 0;
+      barcodeMap[barcode] += delta;
+      if (barcodeMap[barcode] < 0) barcodeMap[barcode] = 0;
+      document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
+      updateTotalQty();
+      saveData();
+    }
+
+    function removeRow(barcode) {
+      delete barcodeMap[barcode];
+      const row = document.getElementById(`row-${barcode}`);
+      if (row) row.remove();
+      updateTotalQty();
+      saveData();
+    }
+
+    function updateTotalQty() {
+      const total = Object.values(barcodeMap).reduce((sum, qty) => sum + qty, 0);
+      totalQtyDisplay.innerText = `TOTAL: ${total}`;
+    }
+
+    function exportToExcel() {
+      const truckNo = truckNoInput.value.trim();
+      if (!truckNo || isNaN(truckNo)) {
+        alert("Please enter a valid Truck No (number).");
+        return;
+      }
+
+      const data = [["Code", "Mark Name", "DO Number", "Qty"]];
+      for (const barcode in barcodeMap) {
+        let doNumber = "Unknown";
+        let markName = "Unknown";
+
+        const parts = barcode.split(".");
+        if (parts.length >= 2) {
+          doNumber = parts[0];
+          markName = parts.slice(1, parts.length - 1).join(".");
+        }
+
+        data.push([barcode, markName, doNumber, barcodeMap[barcode]]);
+      }
+
+      const totalQty = Object.values(barcodeMap).reduce((sum, qty) => sum + qty, 0);
+      data.push(["TOTAL", "", "", totalQty]);
+
+      const worksheet = XLSX.utils.aoa_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, `Truck_${truckNo}`);
+      XLSX.writeFile(workbook, `Loading_Truck_${truckNo}.xlsx`);
+    }
+  </script>
 </body>
 </html>
