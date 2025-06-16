@@ -266,123 +266,114 @@
   </div>
 
   <script>
-  const barcodeInput = document.getElementById("barcodeInput");
-  const truckNoInput = document.getElementById("truckNo");
-  const tableBody = document.querySelector("#barcodeTable tbody");
-  let barcodeMap = {};
-
-  let typingTimer;
-  const doneTypingInterval = 300; // ms after user stops typing
-
-  window.onload = () => {
-    barcodeInput.focus();
-    const savedData = localStorage.getItem("barcodeMap");
-    const savedTruck = localStorage.getItem("truckNo");
-    if (savedTruck) truckNoInput.value = savedTruck;
-    if (savedData) {
-      barcodeMap = JSON.parse(savedData);
-      for (const barcode in barcodeMap) {
+      const barcodeInput = document.getElementById("barcodeInput");
+      const truckNoInput = document.getElementById("truckNo");
+      const tableBody = document.querySelector("#barcodeTable tbody");
+      let barcodeMap = {};
+    
+      let typingTimer;
+      const doneTypingInterval = 300;
+    
+      window.onload = () => {
+        barcodeInput.focus();
+        const savedData = localStorage.getItem("barcodeMap");
+        const savedTruck = localStorage.getItem("truckNo");
+        if (savedTruck) truckNoInput.value = savedTruck;
+        if (savedData) {
+          barcodeMap = JSON.parse(savedData);
+          for (const barcode in barcodeMap) {
+            renderRow(barcode, barcodeMap[barcode]);
+          }
+        }
+      };
+    
+      function saveData() {
+        localStorage.setItem("barcodeMap", JSON.stringify(barcodeMap));
+        localStorage.setItem("truckNo", truckNoInput.value.trim());
+      }
+    
+      barcodeInput.addEventListener("input", () => {
+        clearTimeout(typingTimer);
+        const code = barcodeInput.value.trim();
+        if (code === "") return;
+    
+        typingTimer = setTimeout(() => {
+          updateTable(code);
+          barcodeInput.value = "";
+        }, doneTypingInterval);
+      });
+    
+      function updateTable(barcode) {
+        if (barcodeMap[barcode]) {
+          barcodeMap[barcode]++;
+        } else {
+          barcodeMap[barcode] = 1;
+        }
         renderRow(barcode, barcodeMap[barcode]);
-      }
-    }
-  };
-
-  function saveData() {
-    localStorage.setItem("barcodeMap", JSON.stringify(barcodeMap));
-    localStorage.setItem("truckNo", truckNoInput.value.trim());
-  }
-
-  // Instead of Enter key, use debounce on input event
-  barcodeInput.addEventListener("input", () => {
-    clearTimeout(typingTimer);
-    const code = barcodeInput.value.trim();
-    if (code === "") return; // ignore empty input
-
-    typingTimer = setTimeout(() => {
-      updateTable(code);
-      barcodeInput.value = "";
-    }, doneTypingInterval);
-  });
-
-  function updateTable(barcode) {
-      if (barcodeMap[barcode]) {
-        barcodeMap[barcode]++;
-      } else {
-        barcodeMap[barcode] = 1;
+        saveData();
       }
     
-      renderRow(barcode, barcodeMap[barcode]); // Always call renderRow
-      saveData();
-    }
+      function renderRow(barcode, quantity) {
+        const existingRow = document.getElementById(`row-${barcode}`);
+        if (existingRow) {
+          existingRow.remove();
+        }
     
-    function renderRow(barcode, quantity) {
-      // Remove existing row if it already exists
-      const existingRow = document.getElementById(`row-${barcode}`);
-      if (existingRow) {
-        existingRow.remove();
+        const tr = document.createElement("tr");
+        tr.setAttribute("id", `row-${barcode}`);
+        tr.innerHTML = `
+          <td>${barcode}</td>
+          <td id="qty-${barcode}">${quantity}</td>
+          <td class="qty-control">
+            <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
+            <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
+            <button class="btn btn-sm btn-danger ms-2" onclick="removeRow('${barcode}')">❌</button>
+          </td>
+        `;
+        tableBody.prepend(tr);
       }
     
-      const tr = document.createElement("tr");
-      tr.setAttribute("id", `row-${barcode}`);
-      tr.innerHTML = `
-        <td>${barcode}</td>
-        <td id="qty-${barcode}">${quantity}</td>
-        <td class="qty-control">
-          <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
-          <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
-        </td>
-      `;
-      
-      // Add row to the top
-      tableBody.prepend(tr);
-    }
-
-  function changeQty(barcode, delta) {
-      // Initialize if barcode doesn't exist yet
-      if (!(barcode in barcodeMap)) {
-        barcodeMap[barcode] = 0;
+      function changeQty(barcode, delta) {
+        if (!(barcode in barcodeMap)) barcodeMap[barcode] = 0;
+        barcodeMap[barcode] += delta;
+        if (barcodeMap[barcode] < 0) barcodeMap[barcode] = 0;
+        document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
+        saveData();
       }
     
-      barcodeMap[barcode] += delta;
-    
-      // Prevent going below 0
-      if (barcodeMap[barcode] < 0) {
-        barcodeMap[barcode] = 0;
+      function removeRow(barcode) {
+        delete barcodeMap[barcode];
+        const row = document.getElementById(`row-${barcode}`);
+        if (row) row.remove();
+        saveData();
       }
     
-      document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
-      saveData();
-    }
-
-  function exportToExcel() {
-    const truckNo = truckNoInput.value.trim();
-    if (!truckNo || isNaN(truckNo)) {
-      alert("Please enter a valid Truck No (number).");
-      return;
-    }
-
-    const data = [["Code", "Mark Name", "DO Number", "Qty"]];
-    for (const barcode in barcodeMap) {
-      const parts = barcode.split(".");
-      if(parts.length < 2) {
-        alert(`Invalid barcode format: ${barcode}. Expected at least DO_Number.MarkName`);
-        return;
+      function exportToExcel() {
+        const truckNo = truckNoInput.value.trim();
+        if (!truckNo || isNaN(truckNo)) {
+          alert("Please enter a valid Truck No (number).");
+          return;
+        }
+    
+        const data = [["Code", "Mark Name", "DO Number", "Qty"]];
+        for (const barcode in barcodeMap) {
+          let doNumber = "Unknown";
+          let markName = "Unknown";
+    
+          const parts = barcode.split(".");
+          if (parts.length >= 2) {
+            doNumber = parts[0];
+            markName = parts.slice(1, parts.length - 1).join(".");
+          }
+    
+          data.push([barcode, markName, doNumber, barcodeMap[barcode]]);
+        }
+    
+        const worksheet = XLSX.utils.aoa_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, `Truck_${truckNo}`);
+        XLSX.writeFile(workbook, `Loading_Truck_${truckNo}.xlsx`);
       }
-      const doNumber = parts[0];
-      const qtyFromBarcode = parts[parts.length - 1]; // NOT quantity in your case; we ignore this as qty is in barcodeMap
-      const markNameParts = parts.slice(1, parts.length -1);
-      const markName = markNameParts.join(".");
-
-      data.push([barcode, markName, doNumber, barcodeMap[barcode]]);
-    }
-
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(workbook, worksheet, `Truck_${truckNo}`);
-
-    XLSX.writeFile(workbook, `Loading_Truck_${truckNo}.xlsx`);
-  }
-</script>
+    </script>
 </body>
 </html>
