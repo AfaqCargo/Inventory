@@ -256,6 +256,7 @@
                 <th>Barcode</th>
                 <th>Quantity</th>
                 <th>Actions</th>
+                <th></th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -327,6 +328,8 @@
           <td class="qty-control">
             <button class="qty-btn" onclick="changeQty('${barcode}', -1)">−</button>
             <button class="qty-btn" onclick="changeQty('${barcode}', 1)">+</button>
+          </td>
+          <td>
             <button class="btn btn-sm btn-danger ms-2" onclick="removeRow('${barcode}')">❌</button>
           </td>
         `;
