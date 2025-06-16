@@ -308,7 +308,7 @@
       if (barcodeMap[barcode]) {
         barcodeMap[barcode]++;
       } else {
-        barcodeMap[barcode] = 1;
+        barcodeMap[barcode] = 0;
       }
     
       renderRow(barcode, barcodeMap[barcode]); // Always call renderRow
