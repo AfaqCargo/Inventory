@@ -308,7 +308,7 @@
       if (barcodeMap[barcode]) {
         barcodeMap[barcode]++;
       } else {
-        barcodeMap[barcode] = 0;
+        barcodeMap[barcode] = 1;
       }
     
       renderRow(barcode, barcodeMap[barcode]); // Always call renderRow
@@ -340,7 +340,7 @@
   function changeQty(barcode, delta) {
     if (!barcodeMap[barcode]) return;
     barcodeMap[barcode] += delta;
-    if (barcodeMap[barcode] < 1) barcodeMap[barcode] = 1;
+    if (barcodeMap[barcode] < 0) barcodeMap[barcode] = 0;
     document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
     saveData();
   }
