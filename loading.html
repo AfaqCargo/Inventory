@@ -340,7 +340,7 @@
   function changeQty(barcode, delta) {
     if (!barcodeMap[barcode]) return;
     barcodeMap[barcode] += delta;
-    if (barcodeMap[barcode] < 1) barcodeMap[barcode] = 0;
+    if (barcodeMap[barcode] < 1) barcodeMap[barcode] = 1;
     document.getElementById(`qty-${barcode}`).innerText = barcodeMap[barcode];
     saveData();
   }
