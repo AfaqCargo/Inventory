@@ -230,6 +230,9 @@
                     <button id="exportExcel" class="btn btn-success">
                         <i class="bi bi-file-excel"></i> Export to Excel
                     </button>
+                    <button id="clearAll" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Clear All
+                    </button>
                 </div>
                 
                 <div id="inventoryCardsContainer">
@@ -247,12 +250,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <script>
-        // Generate a unique ID
         function generateUniqueId() {
             return 'id_' + Math.random().toString(36).substr(2, 9);
         }
     
-        // Create a new inventory card
         function createInventoryCard(markName = '', items = []) {
             const cardId = generateUniqueId();
             const cardElement = document.createElement('div');
@@ -288,7 +289,7 @@
                     <div class="items-container" id="itemsContainer_${cardId}">
                         ${itemsHtml}
                     </div>
-                    <button class="btn btn-outline-primary add-item-btn" data-card-id="${cardId}">
+                    <button class="btn btn-outline-primary add-item-btn" data-card-id="${cardId}"> 
                         <i class="bi bi-plus"></i> Add Items
                     </button>
                 </div>
@@ -296,10 +297,8 @@
             return cardElement;
         }
     
-        // Create HTML for a single item row
-        function createItemRowHtml(item = { id: generateUniqueId(), name: '', length: '', width: '', height: '', rate: '', qty: 0 }) {
+        function createItemRowHtml(item) {
             const itemId = item.id || generateUniqueId();
-    
             return `
                 <div class="item-row" data-item-id="${itemId}">
                     <div class="item-field">
@@ -320,24 +319,27 @@
             `;
         }
     
-        // Add a new item row to a specific card
         function addItemRow(cardId) {
             const itemsContainer = document.getElementById(`itemsContainer_${cardId}`);
             const newItemRow = document.createElement('div');
-            newItemRow.innerHTML = createItemRowHtml();
+            newItemRow.innerHTML = createItemRowHtml({
+                id: generateUniqueId(),
+                name: '',
+                length: '',
+                width: '',
+                height: '',
+                rate: '',
+                qty: 0
+            });
             itemsContainer.appendChild(newItemRow.firstElementChild);
             saveInventoryData();
         }
     
-        // Save inventory data to localStorage
         function saveInventoryData() {
             const inventoryData = [];
-            const cards = document.querySelectorAll('.inventory-card');
-    
-            cards.forEach(card => {
+            document.querySelectorAll('.inventory-card').forEach(card => {
                 const markName = card.querySelector('.mark-name').value;
                 const items = [];
-    
                 card.querySelectorAll('.item-row').forEach(itemRow => {
                     items.push({
                         id: itemRow.getAttribute('data-item-id'),
@@ -349,26 +351,17 @@
                         qty: itemRow.querySelector('.qty-value').value
                     });
                 });
-    
-                inventoryData.push({
-                    id: card.id,
-                    markName: markName,
-                    items: items
-                });
+                inventoryData.push({ id: card.id, markName, items });
             });
-    
             localStorage.setItem("inventoryData", JSON.stringify(inventoryData));
         }
     
-        // Load inventory data from localStorage
         function loadInventoryData() {
             const savedData = localStorage.getItem("inventoryData");
             const container = document.getElementById("inventoryCardsContainer");
-    
             if (savedData) {
-                const inventoryData = JSON.parse(savedData);
                 container.innerHTML = '';
-                inventoryData.forEach(cardData => {
+                JSON.parse(savedData).forEach(cardData => {
                     const card = createInventoryCard(cardData.markName, cardData.items);
                     card.id = cardData.id;
                     container.appendChild(card);
@@ -378,11 +371,9 @@
             }
         }
     
-        // Export to Excel function
         function exportToExcel() {
             try {
                 const data = [["Mark Name", "Item", "Length", "Width", "Height", "Rate", "Qty"]];
-    
                 document.querySelectorAll('.inventory-card').forEach(card => {
                     const markName = card.querySelector('.mark-name').value || "";
                     card.querySelectorAll('.item-row').forEach(itemRow => {
@@ -397,12 +388,10 @@
                         ]);
                     });
                 });
-    
                 const ws = XLSX.utils.aoa_to_sheet(data);
                 ws['!cols'] = [
                     { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 8 }
                 ];
-    
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Inventory");
                 XLSX.writeFile(wb, "Inventory_Data.xlsx");
@@ -412,34 +401,36 @@
             }
         }
     
-        // Initialize the application
         document.addEventListener('DOMContentLoaded', function () {
             loadInventoryData();
+    
             document.getElementById("addCard").addEventListener("click", function () {
-                const newCard = createInventoryCard();
-                document.getElementById("inventoryCardsContainer").appendChild(newCard);
+                document.getElementById("inventoryCardsContainer").appendChild(createInventoryCard());
                 saveInventoryData();
             });
+    
             document.getElementById("exportExcel").addEventListener("click", exportToExcel);
+    
+            document.getElementById("clearAll").addEventListener("click", function () {
+                if (confirm("Are you sure you want to delete all inventory data? This action cannot be undone.")) {
+                    localStorage.removeItem("inventoryData");
+                    location.reload();
+                }
+            });
     
             document.addEventListener("click", function (e) {
                 if (e.target.closest('.add-item-btn')) {
-                    const btn = e.target.closest('.add-item-btn');
-                    const cardId = btn.getAttribute('data-card-id');
-                    addItemRow(cardId);
+                    addItemRow(e.target.closest('.add-item-btn').getAttribute('data-card-id'));
                 }
                 if (e.target.classList.contains("qty-decrease")) {
                     const qtyInput = e.target.nextElementSibling;
                     let qty = parseInt(qtyInput.value) || 0;
-                    if (qty > 0) {
-                        qtyInput.value = qty - 1;
-                        saveInventoryData();
-                    }
+                    if (qty > 0) qtyInput.value = qty - 1;
+                    saveInventoryData();
                 }
                 if (e.target.classList.contains("qty-increase")) {
                     const qtyInput = e.target.previousElementSibling;
-                    let qty = parseInt(qtyInput.value) || 0;
-                    qtyInput.value = qty + 1;
+                    qtyInput.value = (parseInt(qtyInput.value) || 0) + 1;
                     saveInventoryData();
                 }
             });
@@ -454,4 +445,3 @@
 
 </body>
 </html>
-
