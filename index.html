@@ -247,36 +247,35 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <script>
-        // Size options
-        const sizeOptions = ["XS", "S", "M", "L", "XL", "S Goni", "M Goni", "L Goni"];
-        
         // Generate a unique ID
         function generateUniqueId() {
             return 'id_' + Math.random().toString(36).substr(2, 9);
         }
-        
+    
         // Create a new inventory card
         function createInventoryCard(markName = '', items = []) {
             const cardId = generateUniqueId();
             const cardElement = document.createElement('div');
             cardElement.className = 'inventory-card';
             cardElement.id = cardId;
-            
+    
             let itemsHtml = '';
             if (items.length === 0) {
-                // Add at least one item row by default
                 items.push({
                     id: generateUniqueId(),
                     name: '',
-                    size: '',
+                    length: '',
+                    width: '',
+                    height: '',
+                    rate: '',
                     qty: 0
                 });
             }
-            
+    
             items.forEach(item => {
                 itemsHtml += createItemRowHtml(item);
             });
-            
+    
             cardElement.innerHTML = `
                 <div class="inventory-card-header">
                     <div class="form-group">
@@ -294,31 +293,23 @@
                     </button>
                 </div>
             `;
-            
             return cardElement;
         }
-        
+    
         // Create HTML for a single item row
-        function createItemRowHtml(item = { id: generateUniqueId(), name: '', size: '', qty: 0 }) {
+        function createItemRowHtml(item = { id: generateUniqueId(), name: '', length: '', width: '', height: '', rate: '', qty: 0 }) {
             const itemId = item.id || generateUniqueId();
-            
-            let sizeOptionsHtml = `<option value="">Select Size</option>`;
-            sizeOptions.forEach(size => {
-                sizeOptionsHtml += `<option value="${size}" ${size === item.size ? 'selected' : ''}>${size}</option>`;
-            });
-            
+    
             return `
                 <div class="item-row" data-item-id="${itemId}">
                     <div class="item-field">
-                        <input type="text" class="form-control item-name" 
-                            placeholder="Item" value="${item.name || ''}">
+                        <input type="text" class="form-control item-name" placeholder="Item" value="${item.name || ''}">
                     </div>
                     <div class="size-qty-container">
-                        <div class="size-field">
-                            <select class="form-select size-select">
-                                ${sizeOptionsHtml}
-                            </select>
-                        </div>
+                        <input type="number" class="form-control length-input" placeholder="Length" step="0.01" value="${item.length || ''}" style="width:90px; margin-right:5px;">
+                        <input type="number" class="form-control width-input" placeholder="Width" step="0.01" value="${item.width || ''}" style="width:90px; margin-right:5px;">
+                        <input type="number" class="form-control height-input" placeholder="Height" step="0.01" value="${item.height || ''}" style="width:90px; margin-right:5px;">
+                        <input type="number" class="form-control rate-input" placeholder="Rate" step="0.01" value="${item.rate || ''}" style="width:90px; margin-right:5px;">
                         <div class="qty-control">
                             <span class="qty-btn qty-decrease">-</span>
                             <input type="text" class="qty-value" value="${item.qty || 0}" readonly>
@@ -328,147 +319,90 @@
                 </div>
             `;
         }
-        
+    
         // Add a new item row to a specific card
         function addItemRow(cardId) {
             const itemsContainer = document.getElementById(`itemsContainer_${cardId}`);
             const newItemRow = document.createElement('div');
             newItemRow.innerHTML = createItemRowHtml();
             itemsContainer.appendChild(newItemRow.firstElementChild);
-            
-            // Save data after adding
             saveInventoryData();
         }
-        
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load saved data
-            loadInventoryData();
-            
-            // Add card button
-            document.getElementById("addCard").addEventListener("click", function() {
-                const newCard = createInventoryCard();
-                document.getElementById("inventoryCardsContainer").appendChild(newCard);
-                saveInventoryData();
-            });
-            
-            // Export to Excel
-            document.getElementById("exportExcel").addEventListener("click", exportToExcel);
-            
-            // Event delegation for dynamic elements
-            document.addEventListener("click", function(e) {
-                // Add item button
-                if (e.target.closest('.add-item-btn')) {
-                    const btn = e.target.closest('.add-item-btn');
-                    const cardId = btn.getAttribute('data-card-id');
-                    addItemRow(cardId);
-                }
-                
-                // Quantity decrease button
-                if (e.target.classList.contains("qty-decrease")) {
-                    const qtyInput = e.target.nextElementSibling;
-                    let qty = parseInt(qtyInput.value) || 0;
-                    if (qty > 0) {
-                        qtyInput.value = qty - 1;
-                        saveInventoryData();
-                    }
-                }
-                
-                // Quantity increase button
-                if (e.target.classList.contains("qty-increase")) {
-                    const qtyInput = e.target.previousElementSibling;
-                    let qty = parseInt(qtyInput.value) || 0;
-                    qtyInput.value = qty + 1;
-                    saveInventoryData();
-                }
-            });
-            
-            // Input changes
-            document.addEventListener("input", function(e) {
-                if (e.target.classList.contains("form-control")) {
-                    saveInventoryData();
-                }
-            });
-            
-            // Select changes
-            document.addEventListener("change", function(e) {
-                if (e.target.classList.contains("form-select")) {
-                    saveInventoryData();
-                }
-            });
-        });
-        
+    
         // Save inventory data to localStorage
         function saveInventoryData() {
             const inventoryData = [];
             const cards = document.querySelectorAll('.inventory-card');
-            
+    
             cards.forEach(card => {
                 const markName = card.querySelector('.mark-name').value;
                 const items = [];
-                
+    
                 card.querySelectorAll('.item-row').forEach(itemRow => {
                     items.push({
                         id: itemRow.getAttribute('data-item-id'),
                         name: itemRow.querySelector('.item-name').value,
-                        size: itemRow.querySelector('.size-select').value,
+                        length: itemRow.querySelector('.length-input').value,
+                        width: itemRow.querySelector('.width-input').value,
+                        height: itemRow.querySelector('.height-input').value,
+                        rate: itemRow.querySelector('.rate-input').value,
                         qty: itemRow.querySelector('.qty-value').value
                     });
                 });
-                
+    
                 inventoryData.push({
                     id: card.id,
                     markName: markName,
                     items: items
                 });
             });
-            
+    
             localStorage.setItem("inventoryData", JSON.stringify(inventoryData));
         }
-        
+    
         // Load inventory data from localStorage
         function loadInventoryData() {
             const savedData = localStorage.getItem("inventoryData");
             const container = document.getElementById("inventoryCardsContainer");
-            
+    
             if (savedData) {
                 const inventoryData = JSON.parse(savedData);
                 container.innerHTML = '';
-                
                 inventoryData.forEach(cardData => {
                     const card = createInventoryCard(cardData.markName, cardData.items);
                     card.id = cardData.id;
                     container.appendChild(card);
                 });
             } else {
-                // Add a default card if no data exists
                 container.appendChild(createInventoryCard());
             }
         }
-        
+    
         // Export to Excel function
         function exportToExcel() {
             try {
-                const data = [["Mark Name", "Item", "Size", "Qty"]];
-                
+                const data = [["Mark Name", "Item", "Length", "Width", "Height", "Rate", "Qty"]];
+    
                 document.querySelectorAll('.inventory-card').forEach(card => {
                     const markName = card.querySelector('.mark-name').value || "";
-                    
                     card.querySelectorAll('.item-row').forEach(itemRow => {
                         data.push([
                             markName,
                             itemRow.querySelector('.item-name').value || "",
-                            itemRow.querySelector('.size-select').value || "",
+                            itemRow.querySelector('.length-input').value || "",
+                            itemRow.querySelector('.width-input').value || "",
+                            itemRow.querySelector('.height-input').value || "",
+                            itemRow.querySelector('.rate-input').value || "",
                             itemRow.querySelector('.qty-value').value || "0"
                         ]);
                     });
                 });
-                
+    
                 const ws = XLSX.utils.aoa_to_sheet(data);
                 ws['!cols'] = [
-                    { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 8 }
+                    { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 8 }
                 ];
-                
+    
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Inventory");
                 XLSX.writeFile(wb, "Inventory_Data.xlsx");
@@ -477,6 +411,47 @@
                 alert("Error exporting to Excel");
             }
         }
+    
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function () {
+            loadInventoryData();
+            document.getElementById("addCard").addEventListener("click", function () {
+                const newCard = createInventoryCard();
+                document.getElementById("inventoryCardsContainer").appendChild(newCard);
+                saveInventoryData();
+            });
+            document.getElementById("exportExcel").addEventListener("click", exportToExcel);
+    
+            document.addEventListener("click", function (e) {
+                if (e.target.closest('.add-item-btn')) {
+                    const btn = e.target.closest('.add-item-btn');
+                    const cardId = btn.getAttribute('data-card-id');
+                    addItemRow(cardId);
+                }
+                if (e.target.classList.contains("qty-decrease")) {
+                    const qtyInput = e.target.nextElementSibling;
+                    let qty = parseInt(qtyInput.value) || 0;
+                    if (qty > 0) {
+                        qtyInput.value = qty - 1;
+                        saveInventoryData();
+                    }
+                }
+                if (e.target.classList.contains("qty-increase")) {
+                    const qtyInput = e.target.previousElementSibling;
+                    let qty = parseInt(qtyInput.value) || 0;
+                    qtyInput.value = qty + 1;
+                    saveInventoryData();
+                }
+            });
+    
+            document.addEventListener("input", function (e) {
+                if (e.target.classList.contains("form-control")) {
+                    saveInventoryData();
+                }
+            });
+        });
     </script>
+
 </body>
 </html>
+
